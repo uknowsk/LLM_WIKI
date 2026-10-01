@@ -34,6 +34,11 @@ def test_update_disputed_and_cascade(env):
     # Update merges sources into the same article
     _, r3 = env.ingest("dept-a", "3.md", "서버 장애 복구 완료", triage("Update", target=r1.article, body="복구 120분, 완료"))
     assert r3.article == r1.article and len(env.store.article_sources(r1.article)) == 2
+    f1 = env.settings.wiki_dir / r1.article
+    t3 = art.parse(r1.article, f1.read_text(encoding="utf-8"))
+    assert t3.body == "복구 120분, 완료" and t3.sources == env.store.article_sources(r1.article)
+    assert "raw/dept-a/1.md" in t3.sources and "raw/dept-a/3.md" in t3.sources
+    assert "복구 120분" in f1.with_name(f1.name + ".bak").read_text(encoding="utf-8")  # previous version kept
     # Disputed keeps old body and appends the conflict
     _, r4 = env.ingest("dept-a", "4.md", "서버 장애 복구 90분", triage("Disputed", target=r1.article, body="90분 주장"))
     t = (env.settings.wiki_dir / r4.article).read_text(encoding="utf-8")
@@ -87,9 +92,11 @@ def test_korean_bm25():
     assert tokenize("매출은 100") == ["매출", "출은", "100"]
 
 
-def test_openai_client_intranet_only():
+def test_openai_client_intranet_only(monkeypatch):
+    monkeypatch.setattr("socket.getaddrinfo", lambda host, *a, **k: [(2, 1, 6, "", ("10.0.0.5", 0))])
     OpenAICompatClient("http://127.0.0.1:8000/v1", "m")
     OpenAICompatClient("http://10.1.2.3/v1", "m")
     OpenAICompatClient("http://llm-server:8000/v1", "m")
+    monkeypatch.setattr("socket.getaddrinfo", lambda host, *a, **k: [(2, 1, 6, "", ("93.184.216.34", 0))])
     with pytest.raises(ValueError):
         OpenAICompatClient("https://api.example.com/v1", "m")

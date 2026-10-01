@@ -34,13 +34,18 @@ class DevAuthProvider:
         self._users = users
 
     def authenticate(self, credentials: dict) -> User | None:
-        return self._users.get(credentials.get("user_id", ""))
+        try:
+            return self._users.get(credentials.get("user_id", ""))
+        except Exception:  # unhashable id, non-dict credentials: bad credentials never raise
+            return None
 
 
 def get_provider(settings: Settings, dev_users: dict[str, User] | None = None) -> AuthProvider:
     if settings.auth_provider == "dev":
-        if settings.env == "production":
-            raise RuntimeError("Dev auth provider is forbidden when WIKI_ENV=production")
+        # Fail closed: dev auth only when env is exactly "development" or "test". Local dev must set
+        # WIKI_ENV=development explicitly (unset WIKI_ENV means "production").
+        if str(settings.env).strip().lower() not in ("development", "test"):
+            raise RuntimeError("Dev auth provider is allowed only when WIKI_ENV is 'development' or 'test'")
         return DevAuthProvider(dev_users or {})
     if settings.auth_provider == "saml":
         raise NotImplementedError("SAML provider is implemented on-site (AD FS)")

@@ -34,7 +34,7 @@ def _doc(**kw):
 def test_save_raw_format_and_no_overwrite(tmp_path):
     s = _settings(tmp_path)
     r1 = save_raw(_doc(), "dept-a/part-1", s, today=date(2026, 10, 2))
-    r2 = save_raw(_doc(), "dept-a/part-1", s, today=date(2026, 10, 2))
+    r2 = save_raw(_doc(text="다른 본문"), "dept-a/part-1", s, today=date(2026, 10, 2))
     assert r1.raw_path == "raw/dept-a/part-1/2026-09-30-주간-회의.md"
     assert r2.raw_path.endswith("-2.md") and r1.space == "dept-a/part-1"
     content = (tmp_path / r1.raw_path).read_text(encoding="utf-8")
@@ -48,7 +48,7 @@ def test_save_raw_unknown_published(tmp_path):
     assert r.raw_path.startswith("raw/d/2026-10-02-")
 
 
-@pytest.mark.parametrize("space", ["", "  ", "..", "a/../b", "../x", "a//b", "a\b", "/abs", "C:evil"])
+@pytest.mark.parametrize("space", ["", "  ", "..", "a/../b", "../x", "a//b", "a\\b", "/abs", "C:evil"])
 def test_save_raw_rejects_bad_space(tmp_path, space):
     with pytest.raises(ValueError):
         save_raw(_doc(), space, _settings(tmp_path))

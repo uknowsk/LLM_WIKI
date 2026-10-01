@@ -38,7 +38,7 @@ class Env:
         rec = RawRecord(f"raw/{space}/{name}", space, hashlib.sha256(text.encode()).hexdigest())
         f = self.settings.data_dir / rec.raw_path
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(text, encoding="utf-8")
+        f.write_bytes(text.encode("utf-8"))
         self.scripted.append(reply)
         return rec, self.compiler.compile(rec, text)
 

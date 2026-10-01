@@ -6,6 +6,7 @@ import zipfile
 from pathlib import PurePath
 from xml.etree import ElementTree as ET
 
+from llmwiki.ingest.limits import check_size
 from llmwiki.models import ParsedDocument
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
@@ -25,12 +26,28 @@ def _paragraph_text(p: ET.Element) -> str:
     return "".join(parts)
 
 
-def parse_docx(data: bytes, source_name: str) -> ParsedDocument:
-    """Extract paragraph text (tables included, in document order) and core properties."""
+def _read_member(z: zipfile.ZipFile, name: str, limit: int) -> bytes:
+    """Read one member with a hard cap (declared sizes can lie, so the read itself is bounded)."""
+    with z.open(name) as f:
+        out = f.read(limit + 1)
+    if len(out) > limit:
+        raise ValueError(f"docx member too large (zip bomb?): {name}")
+    return out
+
+
+def parse_docx(data: bytes, source_name: str, max_bytes: int | None = None) -> ParsedDocument:
+    """Extract paragraph text (tables included, in document order) and core properties.
+
+    Rejects oversized input and zip bombs (declared uncompressed size per member / in total > limit).
+    """
+    limit = check_size(data, source_name, max_bytes)
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as z:
-            body = ET.fromstring(z.read("word/document.xml"))
-            core = ET.fromstring(z.read("docProps/core.xml")) if "docProps/core.xml" in z.namelist() else None
+            infos = z.infolist()
+            if len(infos) > 10000 or any(i.file_size > limit for i in infos) or sum(i.file_size for i in infos) > limit:
+                raise ValueError(f"docx expands beyond the size limit (zip bomb?): {source_name}")
+            body = ET.fromstring(_read_member(z, "word/document.xml", limit))
+            core = ET.fromstring(_read_member(z, "docProps/core.xml", limit)) if "docProps/core.xml" in z.namelist() else None
     except (zipfile.BadZipFile, KeyError, ET.ParseError) as exc:
         raise ValueError(f"not a valid .docx: {source_name}") from exc
     paras = [_paragraph_text(p) for p in body.iter(_W + "p")]

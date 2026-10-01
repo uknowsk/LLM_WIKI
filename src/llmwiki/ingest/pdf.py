@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import PurePath
 from typing import Protocol, runtime_checkable
 
+from llmwiki.ingest.limits import check_size
 from llmwiki.models import ParsedDocument
 
 
@@ -57,8 +58,10 @@ def parse_pdf(
     source_name: str,
     extractor: PdfExtractor | None = None,
     ocr: OcrEngine | None = None,
+    max_bytes: int | None = None,
 ) -> ParsedDocument:
     """Text layer first; pages with no text go to `ocr` if given. metadata records OCR use."""
+    check_size(data, source_name, max_bytes)
     extractor = extractor or PypdfExtractor()
     pages = extractor.extract_pages(data)
     out: list[str] = []

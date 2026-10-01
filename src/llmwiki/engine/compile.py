@@ -6,8 +6,11 @@ article, once it exists, is therefore never touched by compilation.)
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import shutil
+import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -15,12 +18,16 @@ from ..config import Settings
 from ..models import RawRecord
 from . import article as art
 from . import lint
+from .fsutil import append_line, atomic_write, read_text
 from .llm import LLMClient
 from .search import bm25_rank
 from .store import Store
 
 DECISIONS = ("New", "Update", "Disputed", "No material")
 MAX_CANDIDATES = 5
+MIN_UPDATE_RATIO = 0.5  # an Update shorter than this fraction of the old body is refused
+_THINK = re.compile(r"\A\s*<think>.*?</think>", re.S | re.I)
+_CTRL = re.compile(r"[\x00-\x1f\x7f]")
 
 SYSTEM = (
     "You maintain a company wiki. Use ONLY facts in the RAW text. Copy every number, date and quote "
@@ -48,31 +55,56 @@ def _space_slug(space: str) -> str:
 
 
 def _parse_json(reply: str) -> dict:
-    m = re.search(r"\{.*\}", reply, re.S)
-    try:
-        data = json.loads(m.group(0)) if m else None
-    except json.JSONDecodeError:
-        data = None
+    """First balanced JSON object in the reply (after an optional leading <think> block), type-validated."""
+    text = reply if isinstance(reply, str) else ""
+    while (m := _THINK.match(text)):
+        text = text[m.end():]
+    dec, data, i = json.JSONDecoder(), None, text.find("{")
+    while i != -1 and data is None:
+        try:
+            obj, _ = dec.raw_decode(text, i)
+            data = obj if isinstance(obj, dict) else None
+        except json.JSONDecodeError:
+            pass
+        i = text.find("{", i + 1)
     if not isinstance(data, dict) or data.get("decision") not in DECISIONS:
         raise CompileError("LLM triage reply is not valid JSON with a known decision")
+    related = data.get("related")
+    if data.get("target") is not None and not isinstance(data["target"], str):
+        raise CompileError("LLM triage reply: 'target' must be a string")
+    if related is not None and not (isinstance(related, list) and all(isinstance(r, str) for r in related)):
+        raise CompileError("LLM triage reply: 'related' must be a list of strings")
+    for k in ("topic", "title", "body"):
+        if data.get(k) is not None and not isinstance(data[k], str):
+            raise CompileError(f"LLM triage reply: {k!r} must be a string")
     return data
 
 
 class Compiler:
     def __init__(self, settings: Settings, store: Store, llm: LLMClient):
         self.settings, self.store, self.llm = settings, store, llm
+        self._lock = threading.RLock()  # compile() is serialized: one writer for the wiki tree
 
     # -- helpers -----------------------------------------------------------
     def _read(self, path: str) -> art.Article:
-        return art.parse(path, (self.settings.wiki_dir / path).read_text(encoding="utf-8"))
+        a = art.parse(path, read_text(self.settings.wiki_dir / path))
+        a.sources = self.store.article_sources(path)  # source of truth is the DB, not the file
+        return a
 
-    def _write(self, a: art.Article) -> None:
+    def _write(self, a: art.Article, space: str) -> None:
+        """Validate, back up the previous version, write atomically, then register in the store."""
+        if any(self.store.raw_space(s) != space for s in a.sources):
+            raise CompileError("article source is not a registered raw file of this space")
+        spaces = frozenset({space})
+        # related only ever points at existing articles of exactly the same space set
+        a.related = [r for r in dict.fromkeys(a.related) if r != a.path and self.store.article_spaces(r) == spaces]
         a.updated = datetime.now(timezone.utc).date().isoformat()
         titles = {r: self.store.article_title(r) or r for r in a.related}
         f = self.settings.wiki_dir / a.path
-        f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(art.render(a, titles), encoding="utf-8")
-        self.store.upsert_article(a.path, a.title, a.sources)
+        if f.is_file():
+            shutil.copyfile(f, f.with_name(f.name + ".bak"))  # previous version, outside the index
+        atomic_write(f, art.render(a, titles))
+        self.store.upsert_article(a.path, a.title, a.sources, space=space)
 
     def _candidates(self, rec: RawRecord, text: str) -> dict[str, art.Article]:
         same = self.store.articles_with_spaces(frozenset({rec.space}))
@@ -82,11 +114,17 @@ class Compiler:
 
     def _new_path(self, rec: RawRecord, topic: str, title: str) -> str:
         base = f"{art.slugify(topic, 'general')}/{art.slugify(title)}"
+        taken = set(self.store.article_paths())
+
+        def free(p: str) -> bool:  # also check the filesystem: never overwrite an orphan file
+            return p not in taken and not (self.settings.wiki_dir / p).exists()
+
         path = f"{base}.md"
-        if path in self.store.article_paths() or (self.settings.wiki_dir / path).exists():
-            path = f"{base}-{_space_slug(rec.space)}.md"  # never collide with another space's article
+        if free(path):
+            return path
+        path = f"{base}-{_space_slug(rec.space)}.md"  # never collide with another space's article
         i = 2
-        while path in self.store.article_paths():
+        while not free(path):
             path = f"{base}-{_space_slug(rec.space)}-{i}.md"
             i += 1
         return path
@@ -99,20 +137,36 @@ class Compiler:
     def _log(self, rec: RawRecord, decision: str, target: str | None, note: str = "") -> None:
         day = datetime.now(timezone.utc).date().isoformat()
         line = f"## [{day}] ingest | {decision} | {rec.raw_path} -> {target or '-'} {note}".rstrip()
-        with (self._meta_dir(rec.space) / "log.md").open("a", encoding="utf-8") as fh:
-            fh.write(line + "\n")
+        append_line(self._meta_dir(rec.space) / "log.md", line)
 
     def _update_index(self, space: str) -> None:
         lines = ["# Index", ""]
         for p in self.store.articles_with_spaces(frozenset({space})):
-            lines.append(f"- [[{art.link_target(p)}|{self.store.article_title(p) or p}]]")
-        (self._meta_dir(space) / "index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            lines.append(f"- [[{art.link_target(p)}|{art.label(self.store.article_title(p) or p)}]]")
+        atomic_write(self._meta_dir(space) / "index.md", "\n".join(lines) + "\n")
+
+    def _check_raw(self, rec: RawRecord) -> None:
+        parts = rec.raw_path.split("/")
+        if (not rec.raw_path.startswith(f"raw/{rec.space}/") or ".." in parts or "" in parts
+                or _CTRL.search(rec.raw_path) or "\\" in rec.raw_path):
+            raise CompileError(f"raw path {rec.raw_path!r} is not under raw/{rec.space}/")
+        f = self.settings.data_dir / rec.raw_path
+        if f.is_file() and hashlib.sha256(f.read_bytes()).hexdigest() != rec.sha256:
+            raise CompileError(f"raw file {rec.raw_path!r} does not match its recorded sha256")
 
     # -- main entry --------------------------------------------------------
     def compile(self, rec: RawRecord, text: str) -> CompileResult:
+        with self._lock:
+            return self._compile(rec, text)
+
+    def _compile(self, rec: RawRecord, text: str) -> CompileResult:
         if not rec.space:
             raise CompileError("raw record has no space (fail closed)")
-        self.store.add_raw(rec)
+        self._check_raw(rec)
+        try:
+            self.store.add_raw(rec)
+        except ValueError as e:
+            raise CompileError(str(e)) from e
         cands = self._candidates(rec, text)
         prompt = "RAW (" + rec.raw_path + "):\n" + text + "\n\nCANDIDATE ARTICLES:\n" + "\n".join(
             f"### {p}\ntitle: {a.title}\n{a.body}" for p, a in cands.items()
@@ -127,26 +181,34 @@ class Compiler:
             self._log(rec, decision, None)
             return CompileResult(decision, None)
 
-        body = str(data.get("body", "")).strip()
+        body = str(data.get("body") or "").strip()
+        title = art.clean_title(data.get("title") or "")
+        if not body:
+            raise CompileError("LLM returned an empty body")
+        if decision in ("New", "Update") and not title:
+            raise CompileError("LLM returned an empty title")
         if decision == "New":
-            title = str(data.get("title") or rec.raw_path)
             a = art.Article(self._new_path(rec, str(data.get("topic") or "general"), title), title, body, [rec.raw_path])
         else:
             a = cands[target]
             if rec.raw_path not in a.sources:
                 a.sources.append(rec.raw_path)
-            a.body = body if decision == "Update" else f"{a.body}\n\n## Disputed\n{body}\n(Source: {rec.raw_path})"
+            if decision == "Update":
+                if len(body) < MIN_UPDATE_RATIO * len(a.body):
+                    raise CompileError("Update body is less than half of the existing article; refusing to shrink it")
+                a.body = body
+            else:
+                a.body = f"{a.body}\n\n## Disputed\n{body}\n(Source: {rec.raw_path})"
 
-        related = [r for r in data.get("related") or [] if r in cands and r != a.path]
-        a.related = list(dict.fromkeys(a.related + related))
-        self._write(a)
-        self._cascade(a, cands)
+        a.related = list(dict.fromkeys(a.related + [r for r in data.get("related") or [] if r in cands and r != a.path]))
+        self._write(a, rec.space)
+        self._cascade(a, cands, rec.space)
         self._update_index(rec.space)
         n = len(lint.lint_article(self.settings, self.store, a.path)) if (self.settings.data_dir / rec.raw_path).is_file() else 0
         self._log(rec, decision, a.path, f"(grounding suspects: {n})" if n else "")
         return CompileResult(decision, a.path, n)
 
-    def _cascade(self, a: art.Article, cands: dict[str, art.Article]) -> None:
+    def _cascade(self, a: art.Article, cands: dict[str, art.Article], space: str) -> None:
         """Back-link related same-space articles so the new/updated knowledge is reachable from them."""
         for r in a.related:
             other = cands.get(r)
@@ -154,4 +216,4 @@ class Compiler:
                 continue
             if a.path not in other.related:
                 other.related.append(a.path)
-                self._write(other)
+                self._write(other, space)

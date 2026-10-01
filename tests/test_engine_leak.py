@@ -51,9 +51,12 @@ def test_c_mixed_source_article_hidden_from_single_space_user(env):
     for user in (UA, UB):
         res = qs.query(user, "혼합 문서 알파 베타")
         assert "mixed/merge.md" not in res.citations
-        assert user is UB or SECRET not in res.answer
+        assert "MIXEDONLY7731" not in res.answer  # mixed article text never reaches the answer ...
+        if user is UA:
+            assert SECRET not in res.answer
         with pytest.raises(AccessDenied):
             qs.read_article(user, "mixed/merge.md")
+    assert all("MIXEDONLY7731" not in p for _, p in llm.calls)  # ... nor the LLM prompt
     assert "mixed/merge.md" in qs.query(UAB, "혼합 문서").citations  # holder of both spaces may read
     assert qs.read_article(UAB, "mixed/merge.md")
 
@@ -81,7 +84,9 @@ def test_d_read_api(env):
 
 def test_unlabeled_denied(env):
     # article whose source raw has no label row, and one without any source
-    env.store.upsert_article("x/orphan.md", "고아", ["raw/unknown/zzz.md"])
+    env.store._db.execute("INSERT INTO articles VALUES ('x/orphan.md', '고아', '2026-01-01')")  # bypass validation
+    env.store._db.execute("INSERT INTO article_sources VALUES ('x/orphan.md', 'raw/unknown/zzz.md')")
+    env.store._db.commit()
     env.store.upsert_article("x/nosrc.md", "무출처", [])
     for p in ("x/orphan.md", "x/nosrc.md"):
         (env.settings.wiki_dir / "x").mkdir(exist_ok=True)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,17 +22,21 @@ CREATE TABLE IF NOT EXISTS audit (
 
 class AuditLog:
     def __init__(self, db_path: Path | str):
-        self._db = sqlite3.connect(str(db_path))
+        self._lock = threading.RLock()
+        self._db = sqlite3.connect(str(db_path), check_same_thread=False, timeout=5.0)
+        self._db.execute("PRAGMA busy_timeout=5000")
+        self._db.execute("PRAGMA journal_mode=WAL")
         self._db.execute(_SCHEMA)
         self._db.commit()
 
     def record(self, user: User, action: str, target: str, detail: str = "") -> None:
         ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        self._db.execute(
-            "INSERT INTO audit (ts, user_id, action, target, detail) VALUES (?, ?, ?, ?, ?)",
-            (ts, user.id, action, target, detail),
-        )
-        self._db.commit()
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO audit (ts, user_id, action, target, detail) VALUES (?, ?, ?, ?, ?)",
+                (ts, user.id, action, target, detail),
+            )
+            self._db.commit()
 
     def entries(self, user_id: str | None = None) -> list[tuple]:
         q = "SELECT ts, user_id, action, target, detail FROM audit"
@@ -39,7 +44,9 @@ class AuditLog:
         if user_id is not None:
             q += " WHERE user_id = ?"
             args = (user_id,)
-        return self._db.execute(q + " ORDER BY id", args).fetchall()
+        with self._lock:
+            return self._db.execute(q + " ORDER BY id", args).fetchall()
 
     def close(self) -> None:
-        self._db.close()
+        with self._lock:
+            self._db.close()
