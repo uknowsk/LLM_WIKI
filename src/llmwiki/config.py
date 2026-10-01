@@ -41,7 +41,7 @@ def load_settings(environ: dict[str, str] | None = None) -> Settings:
         env=(e.get("WIKI_ENV") or "production").strip().lower() or "production",
         data_dir=Path(e.get("WIKI_DATA_DIR", "./data")),
         auth_provider=e.get("WIKI_AUTH_PROVIDER", "dev"),
-        llm_base_url=e.get("WIKI_LLM_BASE_URL", "http://127.0.0.1:8000/v1"),
+        llm_base_url=e.get("WIKI_LLM_BASE_URL", "http://127.0.0.1:1234/v1"),
         llm_model=e.get("WIKI_LLM_MODEL", "local-model"),
         mask_pii_default=e.get("WIKI_MASK_PII", "0").strip().lower() in _TRUE,
     )

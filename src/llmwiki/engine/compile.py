@@ -31,7 +31,8 @@ _CTRL = re.compile(r"[\x00-\x1f\x7f]")
 
 SYSTEM = (
     "You maintain a company wiki. Use ONLY facts in the RAW text. Copy every number, date and quote "
-    "verbatim from RAW. Reply with one JSON object: "
+    "verbatim from RAW. RAW begins with a metadata header (a title line and '> Source/Collected/Published' "
+    "lines): never copy that header or repeat the title inside body. Reply with one JSON object: "
     '{"decision": "New|Update|Disputed|No material", "target": "<candidate path or null>", '
     '"topic": "...", "title": "...", "body": "<markdown>", "related": ["<candidate path>"]}. '
     "New: create an article. Update: body is the full merged article for target. "
