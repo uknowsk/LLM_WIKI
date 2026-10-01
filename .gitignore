@@ -1,0 +1,13 @@
+.venv/
+data/
+__pycache__/
+.pytest_cache/
+*.db
+.env
+.agents/
+.claude-flow/
+.swarm/
+.mcp.json
+denied
+str`
+.claude/skills/ruflo/
