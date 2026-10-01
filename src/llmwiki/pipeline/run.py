@@ -15,9 +15,11 @@ from llmwiki.audit import AuditLog
 from llmwiki.auth import User
 from llmwiki.config import Settings
 from llmwiki.engine.compile import Compiler
+from llmwiki.engine.embed import Embedder
 from llmwiki.engine.llm import LLMClient
 from llmwiki.engine.store import Store
 from llmwiki.ingest.docx import parse_docx
+from llmwiki.ingest.xlsx import parse_xlsx
 from llmwiki.ingest.eml import parse_eml
 from llmwiki.ingest.pdf import OcrEngine, PdfExtractor, parse_pdf
 from llmwiki.ingest.save import save_raw
@@ -26,7 +28,7 @@ from llmwiki.models import ParsedDocument, RawRecord
 from llmwiki.pipeline import inbox
 
 SYSTEM_USER = User(id="system:pipeline", name="pipeline", department="system")
-SUPPORTED = (".eml", ".md", ".txt", ".docx", ".pdf")
+SUPPORTED = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf")
 ATTACHMENT_SUPPORTED = tuple(e for e in SUPPORTED if e != ".eml")  # no nested mails
 
 _SCHEMA = """
@@ -87,6 +89,8 @@ def _parse(data: bytes, name: str, ocr: OcrEngine | None, extractor: PdfExtracto
         return parse_text(data, name)
     if ext == ".docx":
         return parse_docx(data, name)
+    if ext == ".xlsx":
+        return parse_xlsx(data, name)
     if ext == ".pdf":
         return parse_pdf(data, name, extractor=extractor, ocr=ocr)
     raise _Reject(f"unsupported file type: {ext or '(none)'}")
@@ -142,6 +146,7 @@ def process_file(
     ocr: OcrEngine | None = None,
     extractor: PdfExtractor | None = None,
     mask_policy: Mapping[str, bool] | None = None,
+    embedder: Embedder | None = None,
 ) -> ProcessResult:
     """Ingest one file. Never raises for file-level problems; see ProcessResult.status."""
     path = Path(path)
@@ -161,7 +166,7 @@ def process_file(
                 audit.record(SYSTEM_USER, "ingest_skip", label, f"duplicate sha256={sha[:12]}")
                 _archive(settings, path, space, mask_policy)
                 return result
-            compiler = Compiler(settings, store, llm)
+            compiler = Compiler(settings, store, llm, embedder=embedder)
             if path.suffix.lower() == ".eml":
                 _process_eml(data, path, space, settings, compiler, store, db, audit, mask_policy, ocr, extractor, sha, result)
             else:

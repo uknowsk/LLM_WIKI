@@ -14,6 +14,7 @@ from wsgiref.simple_server import WSGIRequestHandler, WSGIServer, make_server
 from ..audit import AuditLog
 from ..auth import User, get_provider
 from ..config import Settings, load_settings
+from ..engine.embed import embedder_from_env
 from ..engine.llm import OpenAICompatClient
 from ..engine.store import Store
 from .app import WikiApp, create_app
@@ -85,7 +86,7 @@ def main() -> None:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     provider = get_provider(settings, load_dev_users(os.environ.get("WIKI_DEV_USERS_FILE")))
     app = create_app(settings, OpenAICompatClient.from_settings(settings), Store(settings.db_path),
-                     AuditLog(settings.db_path), provider, config=cfg)
+                     AuditLog(settings.db_path), provider, config=cfg, embedder=embedder_from_env(settings))
     server = build_server(settings, app, cfg.host, cfg.port)
     logging.getLogger("llmwiki.web").info("listening on http://%s:%d", cfg.host, cfg.port)
     try:

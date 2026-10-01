@@ -19,20 +19,20 @@ def tokenize(text: str) -> list[str]:
     return out
 
 
-def bm25_rank(query: str, docs: dict[str, str], k1: float = 1.5, b: float = 0.75) -> list[tuple[str, float]]:
-    """Rank `docs` (id -> text) for `query`. Only docs with score > 0 are returned, best first."""
-    toks = {d: Counter(tokenize(t)) for d, t in docs.items()}
+def bm25_scores(q_terms: list[str], toks: dict[str, Counter], k1: float = 1.5, b: float = 0.75) -> list[tuple[str, float]]:
+    """BM25 over pre-tokenized docs (id -> term counts). idf/avg-length use ONLY the docs passed in.
+    Only docs with score > 0 are returned, best first (ties by id)."""
     if not toks:
         return []
     n = len(toks)
     avg = sum(sum(c.values()) for c in toks.values()) / n or 1.0
-    q_terms = set(tokenize(query))
-    df = {t: sum(1 for c in toks.values() if t in c) for t in q_terms}
+    terms = sorted(set(q_terms))  # fixed summation order => reproducible scores
+    df = {t: sum(1 for c in toks.values() if t in c) for t in terms}
     ranked = []
     for d, c in toks.items():
         dl = sum(c.values())
         score = 0.0
-        for t in q_terms:
+        for t in terms:
             f = c.get(t, 0)
             if f:
                 idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
@@ -40,3 +40,8 @@ def bm25_rank(query: str, docs: dict[str, str], k1: float = 1.5, b: float = 0.75
         if score > 0:
             ranked.append((d, score))
     return sorted(ranked, key=lambda x: (-x[1], x[0]))
+
+
+def bm25_rank(query: str, docs: dict[str, str], k1: float = 1.5, b: float = 0.75) -> list[tuple[str, float]]:
+    """Rank `docs` (id -> text) for `query`. Only docs with score > 0 are returned, best first."""
+    return bm25_scores(tokenize(query), {d: Counter(tokenize(t)) for d, t in docs.items()}, k1, b)

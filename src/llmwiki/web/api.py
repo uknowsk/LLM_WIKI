@@ -33,7 +33,7 @@ def query(app, req: Request, session):
     q = body.get("question")
     if not isinstance(q, str) or not q.strip() or len(q) > MAX_QUESTION:
         raise HttpError(400, "bad_question")
-    service = QueryService(app.settings, app.store, app.llm, app.audit)
+    service = QueryService(app.settings, app.store, app.llm, app.audit, embedder=app.embedder)
     try:
         res = service.query(session.user, q.strip())
     except LLMError:

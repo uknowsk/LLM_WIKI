@@ -65,10 +65,10 @@ def test_invalid_space_rejected(env, bad):
 
 
 def test_unsupported_type_rejected_and_moved(env):
-    env.drop("dept-a", "sheet.xlsx", b"PK")
+    env.drop("dept-a", "sheet.xls", b"\xd0\xcf\x11\xe0")  # legacy binary Excel is not supported (only .xlsx)
     res = env.run_all()
     assert res[0].status == "rejected" and "unsupported" in res[0].error
-    assert "dept-a/sheet.xlsx" in inbox_files(env, "_rejected")
+    assert "dept-a/sheet.xls" in inbox_files(env, "_rejected")
 
 
 def test_duplicate_drop_skipped_but_other_space_ingested(env):

@@ -22,7 +22,7 @@ class LLMError(RuntimeError):
 
 
 class LLMClient(Protocol):
-    def complete(self, system: str, prompt: str) -> str: ...
+    def complete(self, system: str, prompt: str, temperature: float | None = None) -> str: ...
 
 
 def _internal_ip(ip: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
@@ -79,14 +79,14 @@ class OpenAICompatClient:
     def from_settings(cls, settings: Settings, **kw) -> "OpenAICompatClient":
         return cls(settings.llm_base_url, settings.llm_model, **kw)
 
-    def complete(self, system: str, prompt: str) -> str:
+    def complete(self, system: str, prompt: str, temperature: float | None = None) -> str:
         try:
             _check_endpoint(self.base_url)  # re-validate: DNS answers can change after construction
         except ValueError as e:
             raise LLMError(str(e)) from e
         body = json.dumps({
             "model": self.model,
-            "temperature": self.temperature,
+            "temperature": self.temperature if temperature is None else temperature,
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
         }).encode("utf-8")
         req = urllib.request.Request(
@@ -114,7 +114,9 @@ class FakeLLM:
     def __init__(self, responder: Callable[[str, str], str] | None = None):
         self._responder = responder or (lambda system, prompt: prompt)
         self.calls: list[tuple[str, str]] = []
+        self.temperatures: list[float | None] = []
 
-    def complete(self, system: str, prompt: str) -> str:
+    def complete(self, system: str, prompt: str, temperature: float | None = None) -> str:
+        self.temperatures.append(temperature)
         self.calls.append((system, prompt))
         return self._responder(system, prompt)

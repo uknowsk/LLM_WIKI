@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 from ..audit import AuditLog
 from ..auth import AuthProvider, DevAuthProvider, User
 from ..config import Settings
+from ..engine.embed import Embedder
 from ..engine.llm import LLMClient
 from ..engine.store import Store
 from . import api, ui
@@ -39,10 +40,11 @@ class Route:
 
 class WikiApp:
     def __init__(self, settings: Settings, llm: LLMClient, store: Store, audit: AuditLog,
-                 auth_provider: AuthProvider, cfg: WebConfig, clock: Callable[[], float] = time.time):
+                 auth_provider: AuthProvider, cfg: WebConfig, clock: Callable[[], float] = time.time,
+                 embedder: Embedder | None = None):
         if isinstance(auth_provider, DevAuthProvider) and not is_dev_env(settings):
             raise RuntimeError("Dev auth provider is allowed only when WIKI_ENV is 'development' or 'test'")
-        self.settings, self.llm, self.store = settings, llm, store
+        self.settings, self.llm, self.store, self.embedder = settings, llm, store, embedder
         self.audit = AuditGuard(audit, clock)  # truncates + coalesces repeated denials
         self._limiter = RateLimiter(clock)
         self.auth_provider, self.cfg = auth_provider, cfg
@@ -209,6 +211,7 @@ class WikiApp:
 
 def create_app(settings: Settings, llm: LLMClient, store: Store, audit: AuditLog, auth_provider: AuthProvider,
                *, config: WebConfig | None = None, environ: dict[str, str] | None = None,
-               clock: Callable[[], float] = time.time) -> WikiApp:
+               clock: Callable[[], float] = time.time, embedder: Embedder | None = None) -> WikiApp:
     """Build the WSGI callable. Raises RuntimeError in production without WIKI_SESSION_SECRET."""
-    return WikiApp(settings, llm, store, audit, auth_provider, config or load_web_config(settings, environ), clock)
+    return WikiApp(settings, llm, store, audit, auth_provider, config or load_web_config(settings, environ), clock,
+                   embedder=embedder)

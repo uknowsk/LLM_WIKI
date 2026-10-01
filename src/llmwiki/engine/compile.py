@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import shutil
 import threading
@@ -18,11 +19,13 @@ from ..config import Settings
 from ..models import RawRecord
 from . import article as art
 from . import lint
+from .embed import Embedder, embed_article
 from .fsutil import append_line, atomic_write, read_text
 from .llm import LLMClient
 from .search import bm25_rank
 from .store import Store
 
+log = logging.getLogger("llmwiki.compile")
 DECISIONS = ("New", "Update", "Disputed", "No material")
 MAX_CANDIDATES = 5
 MIN_UPDATE_RATIO = 0.5  # an Update shorter than this fraction of the old body is refused
@@ -82,8 +85,8 @@ def _parse_json(reply: str) -> dict:
 
 
 class Compiler:
-    def __init__(self, settings: Settings, store: Store, llm: LLMClient):
-        self.settings, self.store, self.llm = settings, store, llm
+    def __init__(self, settings: Settings, store: Store, llm: LLMClient, embedder: Embedder | None = None):
+        self.settings, self.store, self.llm, self.embedder = settings, store, llm, embedder
         self._lock = threading.RLock()  # compile() is serialized: one writer for the wiki tree
 
     # -- helpers -----------------------------------------------------------
@@ -104,8 +107,16 @@ class Compiler:
         f = self.settings.wiki_dir / a.path
         if f.is_file():
             shutil.copyfile(f, f.with_name(f.name + ".bak"))  # previous version, outside the index
-        atomic_write(f, art.render(a, titles))
+        rendered = art.render(a, titles)
+        atomic_write(f, rendered)
         self.store.upsert_article(a.path, a.title, a.sources, space=space)
+        self._embed(a.path, rendered)
+
+    def _embed(self, path: str, rendered: str) -> None:
+        """Best effort: an embedder outage must never fail a compile. On failure the article is left
+        unembedded (stale vector removed) and queries fall back to BM25 for it. Text is never logged."""
+        if self.embedder is not None and embed_article(self.store, self.embedder, path, rendered) == "failed":
+            log.warning("embedding failed for %s; article left unembedded (BM25 fallback)", path)
 
     def _candidates(self, rec: RawRecord, text: str) -> dict[str, art.Article]:
         same = self.store.articles_with_spaces(frozenset({rec.space}))

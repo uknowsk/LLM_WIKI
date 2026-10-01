@@ -10,8 +10,10 @@ from ..auth import User
 from ..config import Settings
 from . import article as art
 from .fsutil import read_text
+from .embed import Embedder
 from .llm import LLMClient
-from .search import bm25_rank
+from .params import RetrievalParams, RetrievedHit
+from .retrieval import Retrieval
 from .store import Store
 
 NO_EVIDENCE = "근거 없음"
@@ -33,30 +35,37 @@ class QueryResult:
 
 
 class QueryService:
-    def __init__(self, settings: Settings, store: Store, llm: LLMClient, audit: AuditLog):
+    def __init__(self, settings: Settings, store: Store, llm: LLMClient, audit: AuditLog,
+                 embedder: Embedder | None = None, params: RetrievalParams | None = None):
         self.settings, self.store, self.llm, self.audit = settings, store, llm, audit
+        self.embedder, self.params = embedder, params
+        self._retrieval = Retrieval(store, settings.wiki_dir)
 
-    def _readable(self, user: User) -> dict[str, str]:
+    def retrieve(self, user: User, question: str, params: RetrievalParams | None = None) -> list[RetrievedHit]:
+        """Ranked, ACL-filtered hits (no LLM call, no audit record). The ACL runs before any ranking.
+        NOTE: this does not audit. If it is ever exposed to end users (API/UI), the caller MUST record
+        an audit entry for `user` first; it is an evaluation/internal hook."""
+        return self._retrieval.rank(user.spaces, question, params or self.params or RetrievalParams(), self.embedder)
+
+    def query(self, user: User, question: str, k: int = 5, params: RetrievalParams | None = None) -> QueryResult:
+        p = params or self.params or RetrievalParams(top_k=k)  # explicit params win over the legacy `k`
+        # filter first: unreadable text never enters ranking, statistics or the prompt
         docs: dict[str, str] = {}
-        for p in self.store.article_paths():
-            if not can_read(user, self.store.article_spaces(p)):
-                continue
-            f = self.settings.wiki_dir / p
+        for h in self.retrieve(user, question, p):
+            f = self.settings.wiki_dir / h.path  # only the top-k files are read, lazily
             if f.is_file():
-                docs[p] = read_text(f)
-        return docs
-
-    def query(self, user: User, question: str, k: int = 5) -> QueryResult:
-        docs = self._readable(user)  # filter first: unreadable text never enters ranking or prompt
-        hits = [p for p, _ in bm25_rank(question, docs)[:k]]
+                docs[h.path] = read_text(f)
+        hits = list(docs)
         if not hits:
             self.audit.record(user, "query", question, "no-evidence")
             return QueryResult(NO_EVIDENCE, [])
-        context = "\n\n".join(f"[{i}] {p}\n{art.split_body(docs[p])}" for i, p in enumerate(hits, 1))
+        cap = p.max_context_chars or None
+        context = "\n\n".join(f"[{i}] {h}\n{art.split_body(docs[h])[:cap]}" for i, h in enumerate(hits, 1))
         # intent is logged BEFORE the LLM call so a failed/aborted call still leaves a trace
         self.audit.record(user, "query_intent", question, "context: " + ", ".join(hits))
         try:
-            answer = self.llm.complete(SYSTEM, f"CONTEXT:\n{context}\n\nQUESTION: {question}").strip()
+            kw = {} if p.temperature is None else {"temperature": p.temperature}  # custom clients may lack the kwarg
+            answer = self.llm.complete(SYSTEM, f"CONTEXT:\n{context}\n\nQUESTION: {question}", **kw).strip()
         except Exception as e:
             self.audit.record(user, "query", question, f"llm-error: {type(e).__name__}")
             raise

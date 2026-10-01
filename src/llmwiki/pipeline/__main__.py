@@ -6,6 +6,7 @@ import sys
 
 from llmwiki.audit import AuditLog
 from llmwiki.config import load_settings
+from llmwiki.engine.embed import embedder_from_env
 from llmwiki.engine.llm import OpenAICompatClient
 from llmwiki.engine.store import Store
 from llmwiki.pipeline.queue import JobQueue
@@ -23,7 +24,8 @@ def main(argv: list[str] | None = None) -> int:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     store, audit, queue = Store(settings.db_path), AuditLog(settings.db_path), JobQueue(settings)
     llm = OpenAICompatClient.from_settings(settings)
-    process = lambda path, space: process_file(path, space, settings, llm, store, audit)  # noqa: E731
+    embedder = embedder_from_env(settings)  # None when WIKI_EMBED_MODEL=off
+    process = lambda path, space: process_file(path, space, settings, llm, store, audit, embedder=embedder)  # noqa: E731
     watcher = Watcher(settings, queue, audit, min_age=0.0 if args.once else 2.0)
     try:
         if args.once:

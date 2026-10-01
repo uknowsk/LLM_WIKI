@@ -13,7 +13,7 @@ from pathlib import Path
 from ..pipeline.inbox import InvalidSpace, inbox_dir, is_temp_name, validate_space
 from .http import HttpError, Request, Response, json_response
 
-ALLOWED_EXT = (".eml", ".md", ".txt", ".docx", ".pdf")
+ALLOWED_EXT = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf")
 _RESERVED = frozenset({"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))})
 _SAFE_PUNCT = frozenset(" ._-()[]")
 _CHUNK = 64 * 1024
@@ -53,7 +53,7 @@ def sanitize_filename(name: str) -> str:
 def _magic_ok(ext: str, head: bytes) -> bool:
     if ext == ".pdf":
         return b"%PDF-" in head[:1024]
-    if ext == ".docx":
+    if ext in (".docx", ".xlsx"):
         return head[:2] == b"PK"
     return True
 
