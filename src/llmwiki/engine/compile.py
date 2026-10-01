@@ -19,6 +19,7 @@ from ..config import Settings
 from ..models import RawRecord
 from . import article as art
 from . import lint
+from . import triage as tg
 from .embed import Embedder, embed_article
 from .fsutil import append_line, atomic_write, read_text
 from .llm import LLMClient
@@ -52,6 +53,7 @@ class CompileResult:
     decision: str
     article: str | None
     suspects: int = 0
+    fallback: str | None = None  # reason when the deterministic raw->New fallback was used
 
 
 def _space_slug(space: str) -> str:
@@ -180,25 +182,42 @@ class Compiler:
         except ValueError as e:
             raise CompileError(str(e)) from e
         cands = self._candidates(rec, text)
-        prompt = "RAW (" + rec.raw_path + "):\n" + text + "\n\nCANDIDATE ARTICLES:\n" + "\n".join(
-            f"### {p}\ntitle: {a.title}\n{a.body}" for p, a in cands.items()
-        )
-        data = _parse_json(self.llm.complete(SYSTEM, prompt))
-        decision = data["decision"]
-        target = data.get("target")
-        if decision in ("Update", "Disputed") and target not in cands:
-            raise CompileError(f"triage target {target!r} is not a same-space candidate")
+        shown, _ = tg.truncate(text, tg.max_chars())
+        cand_txt, cut = [], set()
+        for p, a in cands.items():
+            body, was_cut = tg.truncate(a.body, tg.CAND_MAX_CHARS)
+            if was_cut:
+                cut.add(p)
+            cand_txt.append(f"### {p}\ntitle: {a.title}\n{body}")
+        prompt = "RAW (" + rec.raw_path + "):\n" + shown + "\n\nCANDIDATE ARTICLES:\n" + "\n".join(cand_txt)
+        data, reason = self._triage(prompt)
+        if data is not None:
+            decision, target = data["decision"], data.get("target")
+            if decision in ("Update", "Disputed") and target not in cands:
+                reason = "bad-target"
+            elif decision == "No material" and tg.has_data(text):
+                reason = "no-material-with-data"
+            elif decision == "Update" and target in cut:
+                reason = "candidate-truncated"
+        if reason is None:
+            if decision == "No material":
+                self._log(rec, decision, None)
+                return CompileResult(decision, None)
+            body = str(data.get("body") or "").strip()
+            title = art.clean_title(data.get("title") or "")
+            if decision == "Update" and not body:
+                reason = "empty-body"
+            elif decision == "Update" and not title:
+                reason = "empty-title"
+            elif decision == "Update" and len(body) < MIN_UPDATE_RATIO * len(cands[target].body):
+                reason = "shrink"
+            elif not body:
+                raise CompileError("LLM returned an empty body")
+            elif decision == "New" and not title:
+                raise CompileError("LLM returned an empty title")
+        if reason is not None:
+            return self._fallback_new(rec, text, reason)
 
-        if decision == "No material":
-            self._log(rec, decision, None)
-            return CompileResult(decision, None)
-
-        body = str(data.get("body") or "").strip()
-        title = art.clean_title(data.get("title") or "")
-        if not body:
-            raise CompileError("LLM returned an empty body")
-        if decision in ("New", "Update") and not title:
-            raise CompileError("LLM returned an empty title")
         if decision == "New":
             a = art.Article(self._new_path(rec, str(data.get("topic") or "general"), title), title, body, [rec.raw_path])
         else:
@@ -206,8 +225,6 @@ class Compiler:
             if rec.raw_path not in a.sources:
                 a.sources.append(rec.raw_path)
             if decision == "Update":
-                if len(body) < MIN_UPDATE_RATIO * len(a.body):
-                    raise CompileError("Update body is less than half of the existing article; refusing to shrink it")
                 a.body = body
             else:
                 a.body = f"{a.body}\n\n## Disputed\n{body}\n(Source: {rec.raw_path})"
@@ -215,10 +232,38 @@ class Compiler:
         a.related = list(dict.fromkeys(a.related + [r for r in data.get("related") or [] if r in cands and r != a.path]))
         self._write(a, rec.space)
         self._cascade(a, cands, rec.space)
+        return self._finish(rec, decision, a, None)
+
+    def _finish(self, rec: RawRecord, decision: str, a: art.Article, fallback: str | None) -> CompileResult:
         self._update_index(rec.space)
         n = len(lint.lint_article(self.settings, self.store, a.path)) if (self.settings.data_dir / rec.raw_path).is_file() else 0
-        self._log(rec, decision, a.path, f"(grounding suspects: {n})" if n else "")
-        return CompileResult(decision, a.path, n)
+        notes = ([f"fallback:{fallback}"] if fallback else []) + ([f"(grounding suspects: {n})"] if n else [])
+        self._log(rec, decision, a.path, " ".join(notes))
+        return CompileResult(decision, a.path, n, fallback)
+
+    def _triage(self, prompt: str) -> tuple[dict | None, str | None]:
+        """Ask the model (at most 2 attempts). Returns (data, None) or (None, fallback reason)."""
+        for attempt in (0, 1):
+            try:
+                if attempt == 0:
+                    reply = tg.call_llm(self.llm, SYSTEM, prompt, response_format=tg.RESPONSE_FORMAT)
+                else:
+                    reply = tg.call_llm(self.llm, SYSTEM, prompt + tg.RETRY_NOTE, 0.0, tg.RESPONSE_FORMAT)
+                return _parse_json(reply), None
+            except CompileError:
+                continue
+        return None, "invalid-reply"
+
+    def _fallback_new(self, rec: RawRecord, text: str, reason: str) -> CompileResult:
+        """Deterministic New article from the raw text. Never merges into or modifies any other article."""
+        title, body = tg.raw_fallback(text, rec.raw_path)
+        title = art.clean_title(title) or "untitled"
+        if not body:
+            raise CompileError("raw document has no content to compile")
+        a = art.Article(self._new_path(rec, "general", title), title, body, [rec.raw_path])
+        self._write(a, rec.space)
+        log.warning("compile fallback (%s) for %s", reason, rec.raw_path)
+        return self._finish(rec, "New", a, reason)
 
     def _cascade(self, a: art.Article, cands: dict[str, art.Article], space: str) -> None:
         """Back-link related same-space articles so the new/updated knowledge is reachable from them."""

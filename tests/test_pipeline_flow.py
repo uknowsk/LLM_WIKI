@@ -86,7 +86,7 @@ def test_failed_compile_does_not_undo_already_registered_raw(env):
     import pytest
 
     from llmwiki.engine.compile import Compiler
-    from llmwiki.engine.llm import FakeLLM
+    from llmwiki.engine.llm import FakeLLM, LLMError
     from llmwiki.ingest.text import parse_text
     from llmwiki.pipeline import run as pr
 
@@ -95,7 +95,10 @@ def test_failed_compile_does_not_undo_already_registered_raw(env):
     raws = list((env.settings.raw_dir / "dept-a").glob("*.md"))
     assert len(raws) == 1
     parsed = parse_text("# 보고\n\n금액 500".encode("utf-8"), "one.md")
-    broken = Compiler(env.settings, env.store, FakeLLM(lambda s, p: "this is not json"))
+    def _down(system, prompt):  # an unreachable endpoint (invalid JSON no longer fails: it falls back to New)
+        raise LLMError("endpoint down")
+
+    broken = Compiler(env.settings, env.store, FakeLLM(_down))
     with pytest.raises(Exception):
         pr._ingest_doc(parsed, "dept-a", env.settings, broken, env.store, None, pr._db(env.settings), env.audit)
     assert raws[0].exists()  # identical content resolved to the registered raw; a failed retry must not delete it
@@ -106,21 +109,22 @@ def test_bad_files_do_not_stop_batch(env):
     env.drop("dept-a", "a-good.md", "# 정상1\n\n값 111")
     env.drop("dept-a", "b-bad.eml", b"\x00\x01 not a mail at all")
     env.drop("dept-a", "c-bad.docx", b"not a zip")
-    env.drop("dept-a", "d-badjson.md", "# 깨짐\n\nBADJSON 222")
+    env.drop("dept-a", "d-badjson.md", "# 깨짐\n\nBADJSON 222")  # invalid model JSON now falls back to a New article
+    env.drop("dept-a", "f-llmdown.md", "# 다운\n\nLLMDOWN 444")  # an unreachable endpoint still fails the job
     env.drop("dept-a", "e-good.md", "# 정상2\n\n값 333")
     res = env.run_all()
     final = {r.path.name: r.status for r in res}  # last attempt wins
     assert final == {"a-good.md": "done", "b-bad.eml": "failed", "c-bad.docx": "failed",
-                     "d-badjson.md": "failed", "e-good.md": "done"}
+                     "d-badjson.md": "done", "e-good.md": "done", "f-llmdown.md": "failed"}
     failed = {j["path"].replace("\\", "/").split("/")[-1]: j for j in env.queue.jobs("failed")}
-    assert set(failed) == {"b-bad.eml", "c-bad.docx", "d-badjson.md"}
+    assert set(failed) == {"b-bad.eml", "c-bad.docx", "f-llmdown.md"}
     assert all(j["attempts"] == env.queue.max_attempts and j["last_error"] for j in failed.values())
-    assert "not valid JSON" in failed["d-badjson.md"]["last_error"]
+    assert "endpoint down" in failed["f-llmdown.md"]["last_error"]
     assert "malformed eml" in failed["b-bad.eml"]["last_error"]
-    assert len(env.store.article_paths()) == 2
+    assert len(env.store.article_paths()) == 3  # a-good, e-good and the fallback article for d-badjson
     moved = [f for f in inbox_files(env, "_failed") if not f.endswith(".reason.txt")]
-    assert moved == ["dept-a/b-bad.eml", "dept-a/c-bad.docx", "dept-a/d-badjson.md"]
-    assert not list(env.settings.raw_dir.rglob("*kkaejim*")) and len(list(env.settings.raw_dir.rglob("*.md"))) == 2
+    assert moved == ["dept-a/b-bad.eml", "dept-a/c-bad.docx", "dept-a/f-llmdown.md"]
+    assert not list(env.settings.raw_dir.rglob("*다운*")) and len(list(env.settings.raw_dir.rglob("*.md"))) == 3
     assert all(j["updated_at"].endswith("+00:00") for j in env.queue.jobs())
 
 

@@ -51,11 +51,16 @@ def test_no_material_creates_nothing(env):
 
 
 def test_invalid_reply_and_foreign_target_rejected(env):
-    with pytest.raises(CompileError):
-        env.ingest("dept-a", "x.md", "텍스트", "not json")
+    env.scripted.append("not json")  # retry reply; still invalid => deterministic fallback New
+    _, rx = env.ingest("dept-a", "x.md", "텍스트", "not json")
+    assert rx.decision == "New" and rx.fallback == "invalid-reply" and rx.article
     _, rb = env.ingest("dept-b", "b.md", "비밀 보고", triage(title="비밀", body="b"))
-    with pytest.raises(CompileError):  # LLM tries to merge into another space's article
-        env.ingest("dept-a", "y.md", "비밀 보고 추가", triage("Update", target=rb.article, body="x"))
+    before = (env.settings.wiki_dir / rb.article).read_text(encoding="utf-8")
+    # LLM tries to merge into another space's article: never touched, raw becomes its own New article
+    _, ry = env.ingest("dept-a", "y.md", "비밀 보고 추가", triage("Update", target=rb.article, body="x"))
+    assert ry.fallback == "bad-target" and ry.article != rb.article
+    assert (env.settings.wiki_dir / rb.article).read_text(encoding="utf-8") == before
+    assert env.store.article_spaces(ry.article) == {"dept-a"}
     with pytest.raises(CompileError):
         env.ingest("", "z.md", "text", triage())
 

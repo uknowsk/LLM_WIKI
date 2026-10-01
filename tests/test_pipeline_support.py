@@ -10,7 +10,7 @@ from pathlib import Path
 from llmwiki.audit import AuditLog
 from llmwiki.auth import User
 from llmwiki.config import Settings
-from llmwiki.engine.llm import FakeLLM
+from llmwiki.engine.llm import FakeLLM, LLMError
 from llmwiki.engine.store import Store
 from llmwiki.pipeline.queue import JobQueue
 from llmwiki.pipeline.run import process_file
@@ -24,6 +24,8 @@ def responder(system: str, prompt: str) -> str:
     raw = prompt.split("\n\nCANDIDATE ARTICLES:")[0].split("):\n", 1)[1]
     if "BADJSON" in raw:
         return "this is not json"
+    if "LLMDOWN" in raw:
+        raise LLMError("endpoint down")
     title = re.match(r"# (.+)", raw).group(1)
     body = raw.split("\n\n", 2)[2] if raw.count("\n\n") >= 2 else raw
     return json.dumps({"decision": "New", "target": None, "topic": "general", "title": title,

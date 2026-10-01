@@ -127,8 +127,10 @@ def test_update_cannot_wipe_or_shrink(env):
     before = _text(env, r1.article)
     for bad in (triage("Update", target=r1.article, body=""), triage("Update", target=r1.article, body="짧음"),
                 triage("Update", target=r1.article, title="", body=old)):
-        with pytest.raises(CompileError):
-            env.ingest("dept-a", "u.md", "서버 장애 갱신", bad)
+        env.scripted.append(bad)  # second attempt is not needed: valid JSON but unusable Update => fallback New
+        _, rf = env.ingest("dept-a", "u.md", "서버 장애 갱신", bad)
+        env.scripted.clear()
+        assert rf.fallback and rf.article != r1.article  # never merged into the existing article
     assert _text(env, r1.article) == before
     # Disputed may be short, and the previous version is kept as .bak
     _, rd = env.ingest("dept-a", "d.md", "서버 장애 이견", triage("Disputed", target=r1.article, body="다름"))
@@ -206,6 +208,8 @@ def test_parse_json_tolerance_and_validation():
         _parse_json("[]")
 
 
-def test_unhashable_target_is_compile_error(env):
-    with pytest.raises(CompileError):
-        env.ingest("dept-a", "a.md", "알파", '{"decision":"Update","target":["x"],"body":"b","title":"t"}')
+def test_unhashable_target_falls_back_to_new(env):
+    bad = '{"decision":"Update","target":["x"],"body":"b","title":"t"}'
+    env.scripted.append(bad)
+    _, r = env.ingest("dept-a", "a.md", "알파", bad)
+    assert r.decision == "New" and r.fallback == "invalid-reply"
