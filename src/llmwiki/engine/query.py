@@ -11,8 +11,8 @@ from ..config import Settings
 from . import article as art
 from .fsutil import read_text
 from .embed import Embedder
-from .llm import LLMClient
-from .params import RetrievalParams, RetrievedHit
+from .llm import ContextExceeded, LLMClient
+from .params import RetrievalParams, RetrievedHit, context_char_budget
 from .retrieval import Retrieval
 from .store import Store
 
@@ -22,6 +22,32 @@ SYSTEM = (
     f"If the context does not contain the answer, reply exactly: {NO_EVIDENCE}"
 )
 _MARKER = re.compile(r"\[(\d+)\]")
+TRUNCATED = "[... truncated ...]"
+_MIN_TAIL = 300  # remaining budget below this: drop the next article instead of truncating it
+
+
+def pack_context(docs: dict[str, str], budget: int, cap: int | None) -> tuple[list[str], str, bool]:
+    """Pack articles in rank order into `budget` chars. Returns (included paths, context, truncated).
+    Always includes the first article (cut to the budget); markers [1..n] number included articles only."""
+    parts: list[str] = []
+    included: list[str] = []
+    truncated, used = False, 0
+    for path, text in docs.items():
+        body = art.split_body(text)
+        if cap and len(body) > cap:
+            body, truncated = body[:cap], True
+        head = f"[{len(included) + 1}] {path}\n"
+        left = budget - used - (2 if parts else 0) - len(head)
+        if len(head) + len(body) > budget - used - (2 if parts else 0):
+            if included and left < _MIN_TAIL:
+                truncated = True
+                break
+            body, truncated = body[:max(left - len(TRUNCATED) - 1, 0)] + "\n" + TRUNCATED, True
+        entry = head + body
+        used += len(entry) + (2 if parts else 0)
+        parts.append(entry)
+        included.append(path)
+    return included, "\n\n".join(parts), truncated
 
 
 class AccessDenied(Exception):
@@ -55,20 +81,34 @@ class QueryService:
             f = self.settings.wiki_dir / h.path  # only the top-k files are read, lazily
             if f.is_file():
                 docs[h.path] = read_text(f)
-        hits = list(docs)
-        if not hits:
+        if not docs:
             self.audit.record(user, "query", question, "no-evidence")
             return QueryResult(NO_EVIDENCE, [])
         cap = p.max_context_chars or None
-        context = "\n\n".join(f"[{i}] {h}\n{art.split_body(docs[h])[:cap]}" for i, h in enumerate(hits, 1))
-        # intent is logged BEFORE the LLM call so a failed/aborted call still leaves a trace
-        self.audit.record(user, "query_intent", question, "context: " + ", ".join(hits))
-        try:
-            kw = {} if p.temperature is None else {"temperature": p.temperature}  # custom clients may lack the kwarg
-            answer = self.llm.complete(SYSTEM, f"CONTEXT:\n{context}\n\nQUESTION: {question}", **kw).strip()
-        except Exception as e:
-            self.audit.record(user, "query", question, f"llm-error: {type(e).__name__}")
-            raise
+        budget = context_char_budget()
+        kw = {} if p.temperature is None else {"temperature": p.temperature}  # custom clients may lack the kwarg
+        retried = False
+        while True:
+            hits, context, truncated = pack_context(docs, budget, cap)
+            # intent is logged BEFORE the LLM call so a failed/aborted call still leaves a trace
+            self.audit.record(user, "query_intent", question,
+                              f"context: {', '.join(hits)} (hits={len(docs)} included={len(hits)} truncated={truncated})")
+            try:
+                answer = self.llm.complete(SYSTEM, f"CONTEXT:\n{context}\n\nQUESTION: {question}", **kw).strip()
+                break
+            except ContextExceeded as e:
+                if not retried:
+                    retried = True
+                    new = budget // 2
+                    if e.n_ctx:
+                        new = min(new, int(0.8 * context_char_budget(e.n_ctx)))
+                    budget = max(_MIN_TAIL, new)
+                    continue
+                self.audit.record(user, "query", question, "llm-error: ContextExceeded")
+                raise
+            except Exception as e:
+                self.audit.record(user, "query", question, f"llm-error: {type(e).__name__}")
+                raise
         if answer == NO_EVIDENCE:
             self.audit.record(user, "query", question, "no-evidence")
             return QueryResult(NO_EVIDENCE, [])

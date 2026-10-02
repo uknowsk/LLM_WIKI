@@ -1,6 +1,7 @@
 """Every retrieval/generation knob in one frozen dataclass (defaults == the shipped behavior)."""
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 MODES = ("bm25", "dense", "hybrid")
@@ -32,3 +33,24 @@ class RetrievedHit:
     path: str
     score: float
     rank: int  # 1-based
+
+
+DEFAULT_CONTEXT_TOKENS = 8192
+_RESERVE_TOKENS = 1500  # system prompt + question + answer
+_MIN_CONTEXT_CHARS = 1500
+
+
+def context_char_budget(ctx_tokens: int | None = None) -> int:
+    """TOTAL char budget for the retrieved CONTEXT across articles.
+
+    `ctx_tokens` defaults to env WIKI_LLM_CONTEXT_TOKENS (invalid/non-positive -> 8192). The 0.9 factor
+    assumes ~1 token per char (worst case for Korean mixed with digits/markdown tables) plus 10% slack.
+    """
+    if ctx_tokens is None:
+        try:
+            ctx_tokens = int((os.environ.get("WIKI_LLM_CONTEXT_TOKENS") or "").strip())
+        except ValueError:
+            ctx_tokens = 0
+        if ctx_tokens <= 0:
+            ctx_tokens = DEFAULT_CONTEXT_TOKENS
+    return max(_MIN_CONTEXT_CHARS, int((ctx_tokens - _RESERVE_TOKENS) * 0.9))

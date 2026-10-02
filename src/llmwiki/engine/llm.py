@@ -23,6 +23,33 @@ class LLMError(RuntimeError):
     """The LLM endpoint failed or returned an unusable reply."""
 
 
+class ContextExceeded(LLMError):
+    """The prompt does not fit the model's context window. Never carries prompt text."""
+
+    def __init__(self, message: str, n_ctx: int | None = None):
+        super().__init__(message)
+        self.n_ctx = n_ctx
+
+
+def _context_exceeded(e: urllib.error.HTTPError) -> ContextExceeded | None:
+    if e.code not in (400, 413):
+        return None
+    try:
+        body = e.read(65536).decode("utf-8", "replace")
+    except Exception:  # noqa: BLE001
+        return None
+    if "exceed_context_size_error" not in body and "exceeds the available context" not in body:
+        return None
+    n_ctx = None
+    try:
+        v = json.loads(body)["error"]["n_ctx"]
+        n_ctx = v if isinstance(v, int) and not isinstance(v, bool) and v > 0 else None
+    except (ValueError, KeyError, TypeError):
+        m = re.search(r'"n_ctx"\s*:\s*(\d+)', body)
+        n_ctx = int(m.group(1)) if m else None
+    return ContextExceeded(f"LLM context window exceeded (HTTP {e.code}, n_ctx={n_ctx})", n_ctx)
+
+
 class LLMClient(Protocol):
     def complete(self, system: str, prompt: str, temperature: float | None = None) -> str: ...
     # Implementations may also accept `response_format: dict | None = None` (structured output).
@@ -114,12 +141,18 @@ class OpenAICompatClient:
                 try:
                     return self._post({**payload, "response_format": response_format})
                 except urllib.error.HTTPError as e:
+                    ce = _context_exceeded(e)
+                    if ce is not None:
+                        raise ce from None
                     if e.code not in (400, 415, 422, 501):
                         raise
                     self._structured_ok = False  # server does not support it: plain mode from now on
                     log.info("LLM server rejected response_format (HTTP %s); using plain mode", e.code)
             return self._post(payload)
         except urllib.error.HTTPError as e:
+            ce = _context_exceeded(e)
+            if ce is not None:
+                raise ce from None
             raise LLMError(f"LLM endpoint returned HTTP {e.code}") from e
         except (urllib.error.URLError, OSError, ValueError) as e:  # ValueError covers bad JSON / decode errors
             raise LLMError(f"LLM request failed: {type(e).__name__}: {e}") from e
