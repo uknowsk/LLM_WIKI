@@ -1,3 +1,34 @@
+## Project: 사내 LLM Wiki (이 저장소의 목적과 규칙)
+
+**무엇**: 회사 문서(회의록/이슈/메일 .eml/Office/PDF)를 `inbox/<space>/` 에 넣으면 LLM 이 연관 문서로 묶은 Markdown 위키(Obsidian 호환)로
+컴파일하고, 구성원이 자연어로 질문하면 **권한이 있는 문서만** 근거로 출처 인용 답변을 하는 사내 전용 지식창고. Python, 코어는 stdlib 전용(`src/llmwiki/`).
+
+**먼저 읽을 것** (홈 세션의 메모리는 이관되지 않는다. 필요한 정보는 전부 저장소에 있다):
+1. `docs/ONSITE-HANDOFF.md` — 완료/미완료/사내에서 할 일의 순서, 환경 프로필(Gauss, LM Studio), 트러블슈팅, 첫날 체크리스트
+2. `docs/DEV-GUIDE.md` — 아키텍처 지도, 디스크/DB 구조, 확장 방법, 테스트/코드 규칙, 결정 로그
+3. `docs/PLAN-company-llm-wiki.md` — 기획과 확정 요구사항. 환경변수는 `config/env.example`.
+
+**실행**: 테스트 `scripts\run-tests.ps1` (= `.venv\Scripts\python -m pytest -q`, 항상 통과 유지) ·
+진단 `scripts\run-doctor.ps1` (= `python -m llmwiki.doctor`; 코드/환경 변경 후 첫 확인) · 웹 `scripts\run-web.ps1` · 파이프라인 `scripts\run-pipeline.ps1`.
+셸이 PowerShell 이므로 `&&` 대신 `;`/`if ($?)`. 설치되지 않았다면 `PYTHONPATH=src`. 사내에는 WSL/Docker 가 없다(Windows 네이티브만).
+
+**절대 약화하지 말 것 (보안 불변식)**:
+- ACL 먼저: 열람 권한 없는 문서는 검색/토큰화/점수/LLM 컨텍스트/인용 어디에도 들어가지 않는다. 권한 판단을 LLM 에 맡기지 않는다.
+- Fail closed: space 라벨/출처 없는 문서는 열람 불가, `WIKI_ENV` 미설정 = production, 매핑 없는 사용자 = 빈 spaces.
+- space 간 병합 금지(컴파일은 같은 space 안에서만). 혼합 출처 문서는 모든 출처 space 를 가진 사용자만 열람.
+- dev 가짜 로그인은 `WIKI_ENV` 가 development/test 일 때만. 운영 인증은 SAML(AD FS) — 직접 만든 XML 서명 검증 금지.
+- 비밀/문서 본문을 로그·예외·감사·doctor 출력에 남기지 않는다. 키는 `*_FILE` 로. 프록시/리다이렉트는 기본 금지, 사설 주소만.
+- 보안 관련 변경 후에는 `tests/test_web_leak.py`, `tests/test_engine_leak.py` 를 포함한 전체 테스트를 돌리고, 누수 테스트 케이스를 먼저 추가한다.
+
+**작업 규칙**: 파일당 500줄 미만 · 파라미터화 SQL 만 · 테스트는 네트워크 금지(`FakeLLM`/`FakeEmbedder`) · 새 `WIKI_*` 변수는 `config/env.example` 에 추가 ·
+확인하지 못한 것은 "검증됨/미검증"을 구분해 문서에 정직하게 쓴다 · 코드는 **집 -> 회사 한 방향**으로만 이동한다(사내 산출물을 외부로 되돌리지 않는다).
+
+**진행 방식**: 단계 사이에 사용자 의견을 묻지 말고 계속 진행한다(`docs/ONSITE-HANDOFF.md` (b)의 순서). 단, **강제 푸시, 사용자 파일 삭제, git push** 는 먼저 묻는다.
+막히면(예: AD FS 정보 부재) 가정으로 채우지 말고 무엇이 필요한지 정리해 보고한다.
+
+**아래 Ruflo 절은 선택 도구**다(스웜/메모리/에이전트 라우팅). 사용하지 않아도 된다. 훅(`.claude/settings.json`)이나 GateGuard 류가 첫 편집을 막으면
+요구한 사실을 진술하고 재시도한다. 이 섹션과 아래 규칙이 충돌하면 이 섹션이 우선한다.
+
 # Ruflo — Claude Code Configuration
 
 ## Rules

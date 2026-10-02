@@ -1,12 +1,17 @@
-"""Dev/pilot server: python -m llmwiki.web  (wsgiref + threads; binds 127.0.0.1 unless WIKI_HOST is set).
+"""Server: python -m llmwiki.web [--server waitress|wsgiref]  (binds 127.0.0.1 unless WIKI_HOST is set).
+
+--server / WIKI_SERVER: `waitress` (production; pip install -e .[prod]) or `wsgiref` (dev/pilot thread pool, 503 when
+saturated). Default: waitress when importable, else wsgiref. Asking for waitress explicitly when it is missing is an error.
 
 Dev users (WIKI_AUTH_PROVIDER=dev, WIKI_ENV=development only) come from the JSON file WIKI_DEV_USERS_FILE:
 [{"id": "ua", "name": "Kim", "department": "dept-a", "part": null, "spaces": ["dept-a"], "is_admin": false}]
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import sys
 import threading
 from socketserver import ThreadingMixIn
 from wsgiref.simple_server import WSGIRequestHandler, WSGIServer, make_server
@@ -78,19 +83,60 @@ def build_server(settings: Settings, app: WikiApp, host: str, port: int):
     return make_server(host, port, app, server_class=server_cls, handler_class=handler_cls)
 
 
-def main() -> None:
+def waitress_available() -> bool:
+    try:
+        import waitress  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+def resolve_server(choice: str | None, environ=None) -> str:
+    """Explicit choice (CLI) > WIKI_SERVER > waitress if installed > wsgiref. Raises ValueError/RuntimeError."""
+    env = os.environ if environ is None else environ
+    name = (choice or env.get("WIKI_SERVER") or "").strip().lower()
+    if not name:
+        return "waitress" if waitress_available() else "wsgiref"
+    if name not in ("waitress", "wsgiref"):
+        raise ValueError(f"server must be 'waitress' or 'wsgiref', got {name!r}")
+    if name == "waitress" and not waitress_available():
+        raise RuntimeError("waitress is not installed: pip install -e .[prod]  (or use --server wsgiref)")
+    return name
+
+
+def serve_waitress(app: WikiApp, host: str, port: int) -> None:
+    """Blocking. Threads/timeouts/body cap come from the web config (WIKI_MAX_THREADS, WIKI_SOCKET_TIMEOUT,
+    WIKI_MAX_UPLOAD_BYTES). The body cap leaves 1 MiB of slack so the app itself answers oversize uploads with its
+    own 413 JSON error instead of waitress closing the connection."""
+    import waitress
+
+    cfg = app.cfg
+    waitress.serve(app, host=host, port=port, threads=cfg.max_threads, channel_timeout=int(cfg.socket_timeout),
+                   max_request_body_size=max(cfg.max_upload_bytes, cfg.max_json_bytes) + 1024 * 1024, ident="wiki")
+
+
+def main(argv: list[str] | None = None) -> None:
     import logging
+    ap = argparse.ArgumentParser(prog="llmwiki.web", description="LLM Wiki web server")
+    ap.add_argument("--server", choices=("waitress", "wsgiref"), default=None, help="default: $WIKI_SERVER, else waitress if installed")
+    args = ap.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
+    try:
+        kind = resolve_server(args.server)
+    except (ValueError, RuntimeError) as e:
+        sys.exit(f"llmwiki.web: {e}")
     settings = load_settings()
     cfg = load_web_config(settings)  # raises in production without WIKI_SESSION_SECRET
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     provider = get_provider(settings, load_dev_users(os.environ.get("WIKI_DEV_USERS_FILE")))
     app = create_app(settings, OpenAICompatClient.from_settings(settings), Store(settings.db_path),
                      AuditLog(settings.db_path), provider, config=cfg, embedder=embedder_from_env(settings))
-    server = build_server(settings, app, cfg.host, cfg.port)
-    logging.getLogger("llmwiki.web").info("listening on http://%s:%d", cfg.host, cfg.port)
+    logging.getLogger("llmwiki.web").info("listening on http://%s:%d (server=%s)", cfg.host, cfg.port, kind)
     try:
-        server.serve_forever()
+        if kind == "waitress":
+            serve_waitress(app, cfg.host, cfg.port)
+        else:
+            build_server(settings, app, cfg.host, cfg.port).serve_forever()
     except KeyboardInterrupt:
         pass
 
