@@ -81,3 +81,23 @@ class Request:
         if not isinstance(data, dict):
             raise HttpError(400, "bad_json")
         return data
+
+    def read_form(self, max_bytes: int, max_fields: int = 50) -> dict[str, list[str]]:
+        """application/x-www-form-urlencoded body -> {name: [values]}. 415 wrong type, 411/400 bad length,
+        413 too large, 408 slow client, 400 malformed (non-ASCII body, bad pairs, invalid UTF-8, too many fields)."""
+        if (self.header("Content-Type") or "").split(";")[0].strip().lower() != "application/x-www-form-urlencoded":
+            raise HttpError(415, "unsupported_media_type")
+        n = self.content_length
+        if n > max_bytes:
+            raise HttpError(413, "too_large")
+        try:
+            raw = self.environ["wsgi.input"].read(n)
+        except OSError:
+            raise HttpError(408, "request_timeout") from None
+        if len(raw) != n:
+            raise HttpError(400, "bad_request")
+        try:
+            return parse_qs(raw.decode("ascii"), keep_blank_values=True, strict_parsing=bool(raw),
+                            encoding="utf-8", errors="strict", max_num_fields=max_fields)
+        except (ValueError, UnicodeError):
+            raise HttpError(400, "bad_request") from None

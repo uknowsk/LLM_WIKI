@@ -1,4 +1,4 @@
-"""python -m llmwiki.doctor [--json] [--probe-context] [--skip-llm] [--skip-embed]"""
+"""python -m llmwiki.doctor [--json] [--probe-context] [--skip-llm] [--skip-embed] [--probe-ocr]"""
 from __future__ import annotations
 
 import argparse
@@ -8,6 +8,7 @@ from collections.abc import Mapping
 
 from ..config import load_settings
 from . import report
+from .checks_gaps import check_ocr_command, check_pii_policy
 from .checks_llm import build_llm, check_chat, check_embed, check_stream
 from .checks_self import check_acl, check_ingest
 from .checks_sys import check_auth, check_data, check_env, check_ocr, check_python, check_web
@@ -15,7 +16,7 @@ from .model import Result, warn
 
 
 def run_checks(environ: Mapping[str, str], probe_context: bool = False, skip_llm: bool = False,
-               skip_embed: bool = False, probe_sizes=None) -> list[Result]:
+               skip_embed: bool = False, probe_sizes=None, probe_ocr: bool = False) -> list[Result]:
     results: list[Result] = []
     results += check_python()
     try:
@@ -29,6 +30,8 @@ def run_checks(environ: Mapping[str, str], probe_context: bool = False, skip_llm
     results += check_web(settings, environ)
     results += check_auth(settings)
     results += check_ocr(environ)
+    results += check_ocr_command(environ, probe_ocr)
+    results += check_pii_policy(environ)
     client, res = build_llm(settings, environ)
     results += res
     if client is not None:
@@ -54,9 +57,10 @@ def main(argv: list[str] | None = None, environ: Mapping[str, str] | None = None
                     help="합성 프롬프트를 점점 키워 컨텍스트 한계를 탐지 (최대 약 25만 자를 LLM으로 전송)")
     ap.add_argument("--skip-llm", action="store_true", help="채팅 LLM 호출 검사를 건너뜀")
     ap.add_argument("--skip-embed", action="store_true", help="임베딩 호출 검사를 건너뜀")
+    ap.add_argument("--probe-ocr", action="store_true", help="WIKI_OCR_COMMAND 를 1x1 PNG(또는 빈 PDF)로 실제 실행해 자가 테스트")
     args = ap.parse_args(argv)
     env = os.environ if environ is None else environ
-    results = run_checks(env, args.probe_context, args.skip_llm, args.skip_embed)
+    results = run_checks(env, args.probe_context, args.skip_llm, args.skip_embed, probe_ocr=args.probe_ocr)
     results = report.scrub(results, report.secret_values(env))
     print(report.as_json(results) if args.json else report.as_text(results))
     return report.exit_code(results)

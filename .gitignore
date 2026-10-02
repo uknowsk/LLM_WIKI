@@ -11,3 +11,4 @@ __pycache__/
 denied
 str`
 .claude/skills/ruflo/
+eval/results/*.sqlite

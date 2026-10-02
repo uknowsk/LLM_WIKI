@@ -1,6 +1,7 @@
 """WSGI application: routing, session + CSRF enforcement, security headers, error shaping."""
 from __future__ import annotations
 
+import ipaddress
 import logging
 import secrets
 import time
@@ -29,6 +30,28 @@ _LOGIN_TOKEN_TTL = 600
 _ANON = User("-", "-", "-")
 CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; "
        "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'")
+
+
+def _norm_ip(raw: str) -> str | None:
+    try:
+        return str(ipaddress.ip_address(raw.strip()))
+    except ValueError:
+        return None
+
+
+def client_addr(environ: dict, trusted: frozenset[str]) -> str:
+    """REMOTE_ADDR, unless it is a configured trusted proxy: then the right-most X-Forwarded-For entry that is
+    not itself a trusted proxy. Anything unparsable falls back to the peer address (never trust the left side)."""
+    peer = str(environ.get("REMOTE_ADDR", "-"))
+    if not trusted or _norm_ip(peer) not in trusted:
+        return peer
+    for entry in reversed(str(environ.get("HTTP_X_FORWARDED_FOR", "")).split(",")):
+        ip = _norm_ip(entry)
+        if ip is None:
+            return peer
+        if ip not in trusted:
+            return ip
+    return peer
 
 
 @dataclass(frozen=True)
@@ -113,7 +136,7 @@ class WikiApp:
             known = any(p == req.path for _, p in self._routes)
             raise HttpError(405 if known else 404, "method_not_allowed" if known else "not_found")
         if req.path in _LOGIN_PATHS and not self._limiter.allow(
-                "addr:" + str(req.environ.get("REMOTE_ADDR", "-")), self.cfg.rate_login_per_min):
+                "addr:" + client_addr(req.environ, self.cfg.trusted_proxies), self.cfg.rate_login_per_min):
             raise HttpError(429, "rate_limited")
         unsafe = req.method not in _SAFE_METHODS
         if unsafe:

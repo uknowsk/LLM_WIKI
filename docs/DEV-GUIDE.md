@@ -79,6 +79,18 @@ space 는 `/` 로 계층이고 각 세그먼트는 `[a-z0-9][a-z0-9-]{0,62}`; `_
 - `auth.py` 의 `AuthProvider` 프로토콜과 `get_provider` 분기. 웹과의 접점은 `WikiApp.add_route(method, path, handler, auth=, csrf=, self_validated=)` 와
   `WikiApp.start_session(req, user) -> SessionGrant`(세션 고정 방지, 감사 `login`), `app.session_auth.revoke_user(user_id)`. 핸들러 시그니처 `handler(app, req, session_or_None) -> Response`.
 - POST + `auth=False` 라우트는 `self_validated=True` 없이는 등록 거부(ValueError) — 실수로 CSRF 를 건너뛰지 못하게 한 장치. 상세 절차: ONSITE-HANDOFF b-4.
+- SAML ACS 핸들러 예(IdP 가 `application/x-www-form-urlencoded` 로 POST):
+  ```python
+  app.add_route("POST", "/saml/acs", acs, auth=False, csrf=False, self_validated=True)
+  def acs(app, req, session):
+      form = req.read_form(max_bytes=256 * 1024)   # dict[str, list[str]]; 415 형식 오류 / 413 초과 / 400 잘못된 본문은 HttpError 로 자동 변환
+      xml = base64.b64decode(form["SAMLResponse"][0])  # KeyError/IndexError 는 직접 400 처리
+      user = verify_and_map(xml, form.get("RelayState", [""])[0])  # 서명, InResponseTo, NotBefore/NotOnOrAfter, 재생 방지
+      grant = app.start_session(req, user)
+      return Response(303, b"", "text/plain", [("Location", "/")] + grant.headers())
+  ```
+  Origin 검사는 그대로 적용되므로 IdP 의 Origin 을 `WIKI_ALLOWED_ORIGINS` 에 넣거나 IdP 가 Origin 을 보내지 않아야 한다.
+- 프록시 뒤 클라이언트 주소: `WIKI_TRUSTED_PROXIES`(정확한 IP 목록)와 `web/app.py client_addr`. 감사 로그 정리는 `llmwiki.audit_admin`(관리자 CLI, 웹에서 접근 불가). space별 PII 정책은 `pipeline/pii_policy.py`.
 - 어떤 provider 든 **User.spaces 를 정확히 채우고, 모르면 빈 집합**.
 
 ## 5. 테스트 규칙

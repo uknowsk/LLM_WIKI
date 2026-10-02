@@ -16,7 +16,7 @@
 | 영역 | 상태 | 비고 |
 |---|---|---|
 | 설정 `config.py`, 인증 교체 지점 `auth.py`(AuthProvider), ACL `acl.py`, 감사 `audit.py` | 구현 + 테스트 | dev 인증은 development/test 에서만 |
-| 인제스트 파서: md/txt/docx/xlsx/eml/pdf(텍스트 레이어) | 구현 + 테스트 | PDF 는 `pypdf` 가 있어야 동작 (pyproject 에 없음, 아래 b-1) |
+| 인제스트 파서: md/txt/docx/xlsx/eml/pdf(텍스트 레이어) | 구현 + 테스트 | PDF 는 `pypdf` 가 있어야 동작 (`pip install -e .[pdf]`, 아래 b-1) |
 | PII 마스킹(정규식) | 구현 + 테스트 | space별 정책은 파라미터만 있음(TODO) |
 | 엔진: triage/compile/cascade, 검색(BM25+임베딩, RRF), 질의, lint(근거 검증) | 구현 + 테스트 | |
 | ACL-first 검색, space 격리 컴파일 | 구현 + 누수 테스트 | `tests/test_engine_leak.py`, `tests/test_web_leak.py` |
@@ -41,10 +41,9 @@ waitress 실가동, 리버스 프록시/TLS 뒤 동작, Windows 서비스(작업
 2. Python 3.14 확인(`python --version`). 3.11~3.13 은 `requires-python >=3.11` 이지만 **3.14 만 검증됨** [미검증: 3.11].
 3. `scripts\setup-venv.ps1 -IndexUrl <사내 pip 미러> -TrustedHost <미러 호스트>` : `.venv` 생성 + `pip install -e .[dev,prod]`
    (dev=pytest, prod=waitress). **사내 pip 미러가 없으면 설치 불가**. 코어는 런타임 의존성이 0 이다.
-4. PDF 텍스트 추출을 쓰려면 `-ExtraPackages pypdf` 추가. **`pypdf` 는 pyproject.toml 에 선언되어 있지 않다**(알려진 누락:
-   `src/llmwiki/ingest/pdf.py` 의 `PypdfExtractor` 가 import 에 실패하면 RuntimeError). 그리고 `python -m llmwiki.pipeline` 은
-   현재 PDF 추출기/OCR 엔진을 **주입하지 않는다**(`process_file(..., ocr=None, extractor=None)` 기본값) -> PDF 를 실제로 처리하려면
-   `pipeline/__main__.py` 에서 `PypdfExtractor()` 와 OCR 엔진을 만들어 `process_file` 에 넘기는 연결이 필요하다 [현장 TODO, b-7].
+4. PDF 텍스트 추출을 쓰려면 extra `pdf`(`pypdf>=4`)를 설치한다: `pip install -e .[dev,prod,pdf]` 또는 `-ExtraPackages pypdf`.
+   `python -m llmwiki.pipeline` 은 `pypdf` 가 import 되면 `PypdfExtractor` 를 자동 주입하고, `WIKI_OCR_COMMAND` 가 있으면 OCR 엔진도 주입한다(b-5).
+   `pypdf` 가 없으면 PDF 파일만 파일 단위로 실패한다(`pypdf is not installed`).
 5. `copy config\env.example .env` 후 편집 (프로필 A: 사내). 비밀은 `*_FILE` 로. `.env` 는 커밋 금지(.gitignore 에 있음).
 6. 테스트: `scripts\run-tests.ps1` -> 500 passed / 1 skipped 에 가까워야 한다. waitress 설치 후에는 skip 이 0 이 된다.
 
@@ -115,11 +114,20 @@ WIKI_EMBED_MODEL=text-embedding-bge-m3
 
 ### b-5. OCR 연결
 - 슬롯: `ingest/pdf.py` 의 `OcrEngine` 프로토콜 `ocr_page(data: bytes, page_index: int) -> str` (0 기반). `parse_pdf(data, name, extractor, ocr)` 가 텍스트 레이어가 없는 페이지에 호출.
+- **구현됨**: `pipeline/ocr_command.py` 의 `CommandOcrEngine`. `WIKI_OCR_COMMAND`(외부 실행 파일 경로, 선택 `WIKI_OCR_ARGS` = JSON 문자열 배열)를
+  셸 없이 실행한다(예: `WIKI_OCR_COMMAND=C:\ocr-venv\Scripts\python.exe`, `WIKI_OCR_ARGS=["C:\ocr\run.py"]`). 계약:
+  - `WIKI_OCR_INPUT=pdf`(기본): **PDF 전체를 stdin** 으로 받고, **모든 페이지의 UTF-8 텍스트를 페이지 순서대로 form feed(``)로 구분해 stdout** 으로 출력(페이지당 정확히 1 조각).
+    (`OcrEngine` 프로토콜은 PDF 바이트+페이지 번호만 주며 이 코드는 페이지를 이미지로 렌더링하지 않는다. 래퍼가 PDF->이미지->PaddleOCR 을 직접 수행해야 한다.)
+    PDF 당 자식 프로세스는 1 회(결과를 페이지별로 재사용).
+  - `WIKI_OCR_INPUT=image`: stdin 이 PNG/JPEG 한 장, stdout 이 텍스트. 호출자가 이미지 바이트를 줄 때만 쓰임(현재 파이프라인은 이미지를 주지 않음 - PDF 는 거부).
+  - 자식에게 `WIKI_OCR_INPUT` 환경변수로 실제 입력 종류가 전달된다. **다른 `WIKI_*` 변수(비밀키 포함)는 자식에게 전달하지 않는다.**
+  - 종료 코드 != 0, 타임아웃(`WIKI_OCR_TIMEOUT` 기본 120초), 출력 상한(`WIKI_OCR_MAX_OUTPUT` 기본 8 MiB), 비 UTF-8 출력 -> 예외(파일 `failed`로 기록). stderr 내용은 기록/반환하지 않고 바이트 수만 남긴다.
+  - doctor: `ocr.command`(구성 여부), `python -m llmwiki.doctor --probe-ocr` 는 1x1 PNG(image 모드) 또는 빈 1페이지 PDF(pdf 모드)로 자가 테스트(기본은 실행하지 않음).
+  - 설정 오류(없는 실행 파일, 잘못된 ARGS/숫자)는 파이프라인 **시작을 거부**한다(종료 코드 2).
 - 조사 결과 권장은 **PaddleOCR 을 별도 Python 3.12 프로세스**로 실행(3.14 에서 의존성 설치가 어려울 수 있음)하는 것이나 **미검증**이다.
   구조 제안: `OcrEngine` 구현체가 하위 프로세스(`WIKI_OCR_PYTHON` 으로 지정한 3.12 인터프리터의 워커 스크립트)에 PDF 바이트/페이지 번호를 stdin 으로 넘기고 텍스트를 stdout 으로 받는다.
   타임아웃, 출력 크기 상한, 오류 시 빈 문자열이 아닌 예외(그래야 파이프라인이 실패로 기록)를 지킨다. 문서 내용을 로그에 남기지 않는다.
-- 연결 위치: `pipeline/__main__.py` 가 `process_file(..., ocr=<엔진>, extractor=PypdfExtractor())` 로 넘기도록 수정(현재는 둘 다 None). 엔진 선택은 `WIKI_OCR_*` 환경변수
-  (doctor 는 `WIKI_OCR` 로 시작하는 변수가 있으면 "감지"로만 표시하고 값은 검증하지 않음).
+- 연결 위치: `pipeline/__main__.py` 가 `ocr_from_env()` 와 `PypdfExtractor` 를 `process_file` 에 넘긴다(위). 실제 PaddleOCR 래퍼는 현장에서 작성/검증(미검증).
 - OCR 오인식 가능성: 원본 이미지/PDF 링크 유지(기획 Q4). 이미지 파일(png/jpg) 직접 인제스트는 현재 SUPPORTED 에 없음(`.eml .md .txt .docx .xlsx .pdf`).
 - HWP/HWPX 는 미정(미구현).
 
@@ -131,8 +139,9 @@ WIKI_EMBED_MODEL=text-embedding-bge-m3
 - **`WIKI_ALLOWED_ORIGINS` 필수**(운영): 브라우저가 실제로 보는 `https://wiki.회사.도메인` 과 정확히 일치해야 한다. 프록시가 `Host` 를 바꿔도 서버는 Host 를 신뢰하지 않는다(strict_origin).
   불일치하면 로그인/업로드 POST 가 403 `csrf` 가 된다. 프록시는 `Host` 헤더를 원본 그대로 전달하고, `Origin`/`Cookie`/`X-CSRF-Token` 을 제거하지 않아야 한다.
 - 쿠키는 운영에서 Secure(`__Host-` 접두) -> HTTPS 아니면 로그인이 유지되지 않는다. 프록시 최대 본문/타임아웃을 업로드 상한(50MiB)과 LLM 응답 시간(300초+)에 맞춘다(스트리밍 응답 버퍼링 끄기 [미검증]).
-- **알려진 문제**: 로그인 계열 속도제한은 `REMOTE_ADDR` 기준(기본 분당 20, 주소별)이다. 프록시 뒤에서는 모든 사용자가 프록시 주소 하나로 보이므로 전체가 한 버킷을 공유한다.
-  임시 대응: `WIKI_RATE_LOGIN_PER_MIN` 상향, 근본 대응: waitress `trusted_proxy`/X-Forwarded-For 처리를 추가(미구현, f-8).
+- **프록시 뒤 로그인 속도제한**: 기본은 `REMOTE_ADDR` 기준이라 프록시 뒤에서는 전체가 한 버킷을 공유한다. 해결: `WIKI_TRUSTED_PROXIES`(프록시의 정확한 IP, 쉼표 목록; CIDR 불가, 기본 빈 값 = 기존 동작).
+  `REMOTE_ADDR` 가 이 목록에 있을 때만 `X-Forwarded-For` 를 오른쪽에서부터 읽어 **목록에 없는 첫(가장 오른쪽) 주소**를 클라이언트로 쓴다. 신뢰하지 않는 피어의 XFF, 해석 불가 값은 무시(피어 주소 사용).
+  프록시는 XFF 를 덮어쓰거나 append 해야 한다(왼쪽 값은 공격자가 조작 가능).
 - 서비스화: `scripts\install-service-taskscheduler.ps1 -ServiceAccount <도메인\svc-wiki> -LogDir D:\wiki-logs` (먼저 `-WhatIf`). 웹과 파이프라인을 각각 작업으로 등록,
   부팅 시작, 실패 시 재시작, 일별 로그 + 보존일 삭제. 서비스 계정 권한(저장소 읽기, 데이터/로그 쓰기, 비밀 파일 읽기)만 부여. [작성자 PC 에서 파싱만 확인, 실제 등록은 미검증]
   대안 NSSM 은 IT 승인 후 직접 반입(이 저장소는 다운로드하지 않음), 래핑 대상 명령은 스크립트 헤더 참고.
@@ -250,12 +259,22 @@ SAML/OCR/기능 추가 후에는 반드시 전체 테스트 + 누수 테스트�
 4. **Python 3.11 미검증**: `requires-python >=3.11` 이나 3.14 에서만 테스트(코드에 3.12+ 의 `math.sumprod` 대체 경로는 있음).
 5. **끊긴 스트림 수용**: SSE 읽기는 `[DONE]` 없이 **정상 EOF** 로 끝나도(`iter_sse_lines` 가 EOF 에서 그냥 종료) 지금까지 받은 텍스트를 완성 답변으로 받아들인다. 서버/프록시가 연결을 깔끔히 닫으면 잘린 답변이 정상 답변으로 처리될 수 있다. (소켓 오류/타임아웃은 `LLM stream interrupted` 예외로 처리됨.) 수정 시 `finish_reason` 확인 또는 `[DONE]` 필수화를 검토 [코드로 확인됨, 실서버에서의 빈도는 미검증].
 6. **Gauss/SAML/OCR/GPU 성능/80명 부하/실제 waitress/TLS 프록시: 모두 미검증**(a).
-7. space별 PII 정책 로딩, 감사 로그 보존, 위키 git 이력/롤백, 관리자 화면, 백업 자동화, HWP: 미구현.
-8. 프록시 뒤 `REMOTE_ADDR` 문제(b-6): 로그인 속도제한이 사용자 구분 없이 공유됨.
+7. 위키 git 이력/롤백, 관리자 화면, 백업 자동화, HWP: 미구현. 감사 로그는 **기본 무기한 보존(자동 삭제 없음)**; 필요 시 관리자가 `python -m llmwiki.audit_admin prune --days N --yes`(N>=30, `audit_prune` 행 기록)
+   와 `export --since ISO --out file.jsonl` 사용. 웹의 감사 조회 API 는 읽기 전용 그대로.
+8. (해결됨, 아래 f-A) 프록시 뒤 로그인 속도제한: `WIKI_TRUSTED_PROXIES`.
 9. 단일 프로세스 가정: 세션/속도제한/검색 캐시가 프로세스 메모리 또는 SQLite. 웹을 여러 프로세스로 늘리는 것은 검증되지 않았다(컴파일 락 `COMPILE_LOCK` 도 프로세스 내부 락; 웹과 파이프라인은 별도 프로세스로 같은 SQLite 를 WAL 로 공유).
 10. RetrievalParams 채택값을 환경/설정에서 읽는 경로 없음(c-5).
-11. `eval/results/` 의 `*.sqlite` 캐시는 .gitignore 대상이 아니다. 커밋 전 확인.
-12. `pipeline/__main__.py` 에 OCR/PDF 추출기 주입 없음(b-1, b-5).
+11. (해결됨) `eval/results/*.sqlite` 는 .gitignore 에 추가됨.
+12. (해결됨, f-A) 파이프라인 CLI 의 PDF 추출기/OCR 주입.
+13. **SAML 제공자는 현장에서 작성**: ACS 핸들러는 `add_route(..., self_validated=True)` + `Request.read_form()` 사용(DEV-GUIDE 4-3). 서명/InResponseTo/시간 창/재생 검증은 핸들러 책임.
+
+### f-A. 이번에 해결된 항목 (환경변수는 config/env.example 7번 섹션)
+- extra `pdf = ["pypdf>=4"]`; 파이프라인 CLI 가 PypdfExtractor 자동 주입.
+- `WIKI_OCR_COMMAND` 외부 OCR 연결(`CommandOcrEngine`, b-5) + doctor `ocr.command`/`--probe-ocr`.
+- `WIKI_TRUSTED_PROXIES`: 프록시 뒤 클라이언트 주소 기반 로그인 속도제한(b-6).
+- `Request.read_form(max_bytes)`: SAML ACS 용 폼 본문 리더.
+- `WIKI_PII_POLICY_FILE`: space별 PII 마스킹 정책(JSON, 가장 가까운 상위 space 우선, 없으면 `WIKI_MASK_PII`). 파일이 읽히지 않거나 잘못되면 **파이프라인 시작 거부**(조용히 마스킹이 꺼지지 않음). doctor `pii.policy`.
+- 감사 로그 보존 도구 `llmwiki.audit_admin`(prune/export). 자동 호출 없음, 웹 계층에서 접근 불가.
 
 ---
 

@@ -39,6 +39,8 @@ class AuditGuard:
         self._audit, self._clock, self._lock, self._seen = audit, clock, threading.Lock(), {}
 
     def __getattr__(self, name):
+        if name in ("prune", "count_older_than"):  # destructive admin tools are never reachable from the web layer
+            raise AttributeError(name)
         return getattr(self._audit, name)
 
     def record(self, user: User, action: str, target: str, detail: str = "") -> None:

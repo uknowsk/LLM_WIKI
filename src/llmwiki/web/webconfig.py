@@ -1,6 +1,7 @@
 """Web-layer settings from the environment. Fails closed in production."""
 from __future__ import annotations
 
+import ipaddress
 import os
 import secrets
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ class WebConfig:
     max_threads: int = 64
     rate_user_per_min: int = 120
     rate_login_per_min: int = 20
+    trusted_proxies: frozenset[str] = frozenset()  # exact proxy IPs whose X-Forwarded-For is honoured
 
 
 def _int(e, key: str, default: int) -> int:
@@ -57,6 +59,17 @@ def _bool(e, key: str, default: bool) -> bool:
     if v in _FALSE:
         return False
     raise RuntimeError(f"{key} must be a boolean")
+
+
+def _proxies(e) -> frozenset[str]:
+    out = set()
+    for item in (e.get("WIKI_TRUSTED_PROXIES") or "").split(","):
+        if item.strip():
+            try:
+                out.add(str(ipaddress.ip_address(item.strip())))
+            except ValueError:
+                raise RuntimeError("WIKI_TRUSTED_PROXIES must be a comma list of exact IP addresses") from None
+    return frozenset(out)
 
 
 def load_web_config(settings: Settings, environ: dict[str, str] | None = None) -> WebConfig:
@@ -91,4 +104,5 @@ def load_web_config(settings: Settings, environ: dict[str, str] | None = None) -
         max_threads=_int(e, "WIKI_MAX_THREADS", 64),
         rate_user_per_min=_int(e, "WIKI_RATE_USER_PER_MIN", 120),
         rate_login_per_min=_int(e, "WIKI_RATE_LOGIN_PER_MIN", 20),
+        trusted_proxies=_proxies(e),
     )
