@@ -1,0 +1,26 @@
+{
+  "_comment": "Sample for WIKI_LLM_PROVIDER=custom. Copy, edit, then set WIKI_LLM_CUSTOM_CONFIG=<path>. Keys starting with _ are ignored. Placeholders (only inside string values): {model} {system} {prompt} {temperature} {max_tokens} {stream} {response_format} {api_key} {uuid}. A value that is exactly one placeholder keeps its type. Put the key in WIKI_LLM_API_KEY or WIKI_LLM_API_KEY_FILE, never in this file.",
+  "url": {"base_url_env": "WIKI_LLM_BASE_URL", "path": "/chat"},
+  "method": "POST",
+  "headers": {
+    "Authorization": "Bearer {api_key}",
+    "X-Request-Id": "{uuid}"
+  },
+  "body": {
+    "model": "{model}",
+    "messages": [
+      {"role": "system", "content": "{system}"},
+      {"role": "user", "content": "{prompt}"}
+    ],
+    "temperature": "{temperature}",
+    "max_tokens": "{max_tokens}"
+  },
+  "response_path": "choices.0.message.content",
+  "error_path": "error.message",
+  "stream": false,
+  "stream_path": "choices.0.delta.content",
+  "context_exceeded_patterns": ["context", "token limit"],
+  "supports_json_schema": false,
+  "timeout": 120,
+  "max_tokens": 1024
+}

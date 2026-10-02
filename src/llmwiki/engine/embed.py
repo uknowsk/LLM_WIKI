@@ -17,7 +17,8 @@ from typing import Protocol
 
 from ..config import Settings
 from . import article as art
-from .llm import _MAX_RESPONSE, _NoRedirect, _check_endpoint
+from .llm import _MAX_RESPONSE, _check_endpoint
+from .providers_http import NetPolicy, Secret, build_opener, embed_net
 
 DEFAULT_EMBED_MODEL = "text-embedding-bge-m3"
 MAX_CHARS = 4000  # inputs are truncated so one long article cannot overflow the model context
@@ -93,11 +94,20 @@ def embed_article(store, embedder: Embedder, path: str, file_text: str) -> str:
 
 
 class OpenAICompatEmbedder:
-    """POST {base}/embeddings. Same intranet-only rules as OpenAICompatClient: no proxies, no redirects."""
+    """POST {base}/embeddings. Same intranet-only rules as OpenAICompatClient: no proxies, no redirects
+    (unless opted in via WIKI_EMBED_* / WIKI_LLM_* ALLOWED_HOSTS, PROXY, CA_BUNDLE, API_KEY[_FILE])."""
 
     def __init__(self, base_url: str, model: str, timeout: float = 60.0, batch_size: int = 16,
-                 query_timeout: float | None = None):
-        _check_endpoint(base_url)
+                 query_timeout: float | None = None, policy: NetPolicy | None = None, api_key: Secret | None = None):
+        if policy is None:  # resolve like the factory: WIKI_LLM_* is inherited only for the same host:port
+            from .providers import chat_endpoint_url
+
+            default_chat = os.environ.get("WIKI_LLM_BASE_URL") or "http://127.0.0.1:1234/v1"
+            policy, key = embed_net(os.environ, base_url, chat_endpoint_url(default_chat))
+            api_key = api_key if api_key is not None else key
+        self.policy = policy
+        _check_endpoint(base_url, self.policy.allowed_hosts)
+        self._key = api_key
         if query_timeout is None:  # short, so a stalled endpoint cannot hold every web query for `timeout`
             try:
                 query_timeout = float(os.environ.get("WIKI_EMBED_QUERY_TIMEOUT", "5"))
@@ -106,7 +116,7 @@ class OpenAICompatEmbedder:
         self.query_timeout = query_timeout
         self.base_url, self.model, self.timeout = base_url.rstrip("/"), model, timeout
         self.batch_size = max(1, batch_size)
-        self._opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect())
+        self._opener = build_opener(self.policy)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         out: list[list[float]] = []
@@ -119,12 +129,14 @@ class OpenAICompatEmbedder:
 
     def _batch(self, texts: list[str], timeout: float | None = None) -> list[list[float]]:
         try:
-            _check_endpoint(self.base_url)  # DNS answers can change after construction
+            _check_endpoint(self.base_url, self.policy.allowed_hosts)  # DNS answers can change after construction
         except ValueError as e:
             raise EmbedError(str(e)) from e
         body = json.dumps({"model": self.model, "input": texts}).encode("utf-8")
-        req = urllib.request.Request(self.base_url + "/embeddings", data=body,
-                                     headers={"Content-Type": "application/json"})
+        headers = {"Content-Type": "application/json"}
+        if self._key:
+            headers["Authorization"] = "Bearer " + self._key.reveal()
+        req = urllib.request.Request(self.base_url + "/embeddings", data=body, headers=headers)
         try:
             with self._opener.open(req, timeout=self.timeout if timeout is None else timeout) as resp:  # noqa: S310 (intranet only)
                 data = json.loads(resp.read(_MAX_RESPONSE).decode("utf-8"))
@@ -165,12 +177,27 @@ class FakeEmbedder:
         return out
 
 
-def embedder_from_env(settings: Settings, environ: Mapping[str, str] | None = None) -> OpenAICompatEmbedder | None:
+def embedder_from_env(settings: Settings, environ: Mapping[str, str] | None = None) -> Embedder | None:
     """WIKI_EMBED_MODEL: unset -> text-embedding-bge-m3; "off"/empty -> None (BM25 only).
-    Same base URL as the chat LLM (settings.llm_base_url)."""
+    WIKI_EMBED_PROVIDER: openai (default; base URL = WIKI_EMBED_BASE_URL, else settings.llm_base_url) | custom
+    (WIKI_EMBED_CUSTOM_CONFIG). WIKI_EMBED_ALLOWED_HOSTS/_PROXY/_CA_BUNDLE/_API_KEY[_FILE] fall back to the
+    WIKI_LLM_* values ONLY when the embeddings endpoint has the same host:port as the chat endpoint (the chat key
+    must never reach a different server): otherwise set WIKI_EMBED_PROXY / WIKI_EMBED_API_KEY explicitly."""
+    from .providers import provider_name  # lazy: providers imports this module's siblings
+
     e = os.environ if environ is None else environ
     raw = e.get("WIKI_EMBED_MODEL")
     model = DEFAULT_EMBED_MODEL if raw is None else raw.strip()
     if not model or model.lower() in _OFF:
         return None
-    return OpenAICompatEmbedder(settings.llm_base_url, model)
+    from .providers import chat_endpoint_url
+    from .providers_embed import embed_config_url
+
+    base = (e.get("WIKI_EMBED_BASE_URL") or "").strip() or settings.llm_base_url
+    custom = provider_name(e, "WIKI_EMBED_PROVIDER") == "custom"
+    policy, key = embed_net(e, embed_config_url(e) if custom else base, chat_endpoint_url(settings.llm_base_url, e))
+    if custom:
+        from .providers_embed import custom_embedder
+
+        return custom_embedder(model, e, policy=policy, api_key=key)
+    return OpenAICompatEmbedder(base, model, policy=policy, api_key=key)

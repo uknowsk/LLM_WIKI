@@ -1,0 +1,14 @@
+{
+  "_comment": "Sample for WIKI_EMBED_PROVIDER=custom (WIKI_EMBED_CUSTOM_CONFIG=<path>). Placeholders: {model} {input} {api_key} {uuid}. Reply shape below: {\"data\": [{\"index\": 0, \"embedding\": [..]}]}. If the API takes ONE text per call set input_is_list=false and point vectors_path at the vector itself.",
+  "url": {"base_url_env": "WIKI_EMBED_BASE_URL", "path": "/embeddings"},
+  "method": "POST",
+  "headers": {"Authorization": "Bearer {api_key}"},
+  "body": {"model": "{model}", "input": "{input}"},
+  "vectors_path": "data",
+  "vector_item_path": "embedding",
+  "index_path": "index",
+  "error_path": "error.message",
+  "input_is_list": true,
+  "batch_size": 16,
+  "timeout": 60
+}
