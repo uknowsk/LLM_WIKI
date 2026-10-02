@@ -170,7 +170,7 @@ def test_cosine_benchmark_2000x1024(tmp_path, capsys):
         for _ in range(5):
             warm = qs.retrieve(UA, "서버 장애 복구", RetrievalParams(retrieval_mode=mode))
         timings[mode + "_warm_ms"] = (time.perf_counter() - t0) * 200
-        assert warm == cold and len(warm) == 5
+        assert warm == cold and len(warm) == RetrievalParams().top_k
     with capsys.disabled():
         print("\nBENCH 2000x1024:", {k: round(v, 1) for k, v in timings.items()})
     assert timings["hybrid_warm_ms"] < 5000  # generous: this is a report, not a gate

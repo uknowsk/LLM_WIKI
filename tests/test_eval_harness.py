@@ -163,9 +163,11 @@ def test_heldout_guard(tmp_path):
     with pytest.raises(HeldoutGuardError):
         run_final(h, cfg, res, ("retrieval",))
     # an equivalent spelling of the same config (defaults spelled out) has the same hash
-    assert params_hash({**cfg, "rrf_k": 60}) == params_hash(cfg)
+    default_rrf_k = RetrievalParams().rrf_k
+    assert params_hash({**cfg, "rrf_k": default_rrf_k}) == params_hash(cfg)
+    assert params_hash({**cfg, "rrf_k": default_rrf_k + 1}) != params_hash(cfg)
     with pytest.raises(HeldoutGuardError):
-        run_final(h, {**cfg, "rrf_k": 60}, res, ("retrieval",))
+        run_final(h, {**cfg, "rrf_k": default_rrf_k}, res, ("retrieval",))
     run_final(h, cfg, res, ("retrieval",), force=True)
     run_final(h, {"retrieval_mode": "bm25", "top_k": 4}, res, ("retrieval",))  # a different config is fine
 
