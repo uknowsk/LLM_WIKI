@@ -1,0 +1,2168 @@
+{
+ "params": {
+  "top_k": 5,
+  "candidate_pool": 50,
+  "rrf_k": 60,
+  "w_bm25": 1.0,
+  "w_dense": 1.0,
+  "min_cosine": 0.0,
+  "bm25_k1": 1.5,
+  "bm25_b": 0.75,
+  "max_context_chars": 0,
+  "temperature": null,
+  "retrieval_mode": "hybrid"
+ },
+ "split": "tune",
+ "summary": {
+  "mode": "answer",
+  "overall": {
+   "n": 70,
+   "recall": 0.9818181818181818,
+   "hit": 0.9818181818181818,
+   "hit1": 0.8363636363636363,
+   "mrr": 0.9060606060606061,
+   "ndcg": 0.9253304623543673,
+   "retrieval_score": 0.9477933651981462,
+   "stale_top1": 0.16666666666666666,
+   "correct": 0.9454545454545454,
+   "fact_recall": 0.9454545454545454,
+   "citation_accuracy": 0.9636363636363636,
+   "empty_rate": 0.0,
+   "refusal_accuracy": 1.0,
+   "latency_ms": {
+    "p50": 23355.60390000319,
+    "p95": 34685.37970000034,
+    "mean": 24139.241625713996
+   },
+   "leaks": 0
+  },
+  "by_type": {
+   "lookup": {
+    "n": 10,
+    "recall": 1.0,
+    "hit": 1.0,
+    "hit1": 0.9,
+    "mrr": 0.95,
+    "ndcg": 0.9630929753571458,
+    "retrieval_score": 0.9776185950714291,
+    "correct": 1.0,
+    "fact_recall": 1.0,
+    "citation_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 21123.60500000068,
+     "p95": 25336.03829999629,
+     "mean": 22339.40600999922
+    },
+    "leaks": 0
+   },
+   "paraphrase": {
+    "n": 11,
+    "recall": 1.0,
+    "hit": 1.0,
+    "hit1": 0.7272727272727273,
+    "mrr": 0.8636363636363636,
+    "ndcg": 0.8993444782467612,
+    "retrieval_score": 0.9389598047402614,
+    "correct": 1.0,
+    "fact_recall": 1.0,
+    "citation_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 24151.448399999936,
+     "p95": 33265.413099994475,
+     "mean": 25325.137572726817
+    },
+    "leaks": 0
+   },
+   "numeric": {
+    "n": 8,
+    "recall": 1.0,
+    "hit": 1.0,
+    "hit1": 1.0,
+    "mrr": 1.0,
+    "ndcg": 1.0,
+    "retrieval_score": 1.0,
+    "correct": 0.875,
+    "fact_recall": 0.875,
+    "citation_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 23579.87100000173,
+     "p95": 29930.20550000074,
+     "mean": 23381.132500000604
+    },
+    "leaks": 0
+   },
+   "multi_doc": {
+    "n": 9,
+    "recall": 1.0,
+    "hit": 1.0,
+    "hit1": 0.8888888888888888,
+    "mrr": 0.925925925925926,
+    "ndcg": 0.9418519060544447,
+    "retrieval_score": 0.9661481589886667,
+    "correct": 1.0,
+    "fact_recall": 1.0,
+    "citation_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 29684.071499999845,
+     "p95": 35291.691500002344,
+     "mean": 29106.504655556313
+    },
+    "leaks": 0
+   },
+   "latest": {
+    "n": 6,
+    "recall": 1.0,
+    "hit": 1.0,
+    "hit1": 0.6666666666666666,
+    "mrr": 0.8333333333333334,
+    "ndcg": 0.8769765845238192,
+    "retrieval_score": 0.9253953169047638,
+    "stale_top1": 0.16666666666666666,
+    "correct": 0.8333333333333334,
+    "fact_recall": 0.8333333333333334,
+    "citation_accuracy": 0.8333333333333334,
+    "latency_ms": {
+     "p50": 22053.961899997375,
+     "p95": 36172.449799996684,
+     "mean": 24740.19224999817
+    },
+    "leaks": 0
+   },
+   "table_merged": {
+    "n": 11,
+    "recall": 0.9090909090909091,
+    "hit": 0.9090909090909091,
+    "hit1": 0.8181818181818182,
+    "mrr": 0.8636363636363636,
+    "ndcg": 0.8755390685064962,
+    "retrieval_score": 0.8887441773376629,
+    "correct": 0.9090909090909091,
+    "fact_recall": 0.9090909090909091,
+    "citation_accuracy": 0.9090909090909091,
+    "latency_ms": {
+     "p50": 23355.60390000319,
+     "p95": 43373.61300000339,
+     "mean": 25433.717399999627
+    },
+    "leaks": 0
+   },
+   "unanswerable": {
+    "n": 8,
+    "empty_rate": 0.0,
+    "refusal_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 22189.904900005786,
+     "p95": 27431.105299998308,
+     "mean": 22985.59876250056
+    },
+    "leaks": 0
+   },
+   "cross_space": {
+    "n": 7,
+    "empty_rate": 0.0,
+    "refusal_accuracy": 1.0,
+    "latency_ms": {
+     "p50": 21437.47710000025,
+     "p95": 22264.176699995005,
+     "mean": 18095.986214284494
+    },
+    "leaks": 0
+   }
+  },
+  "objective": 0.9618181818181817,
+  "retrieval_objective": 0.6634553556387023,
+  "leaks": 0
+ },
+ "rows": [
+  {
+   "id": "q001",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/인프라팀-당직-운영-기준.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "empty": false,
+   "latency_ms": 19822.29219999863,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q002",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md"
+   ],
+   "empty": false,
+   "latency_ms": 23659.891000002972,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "answer": "신규 입사자 계정 생성 지연 문제는 3분기 이슈 리스트에 따르면 '미해결' 상태이며, 원인 분석 및 해결을 위해 승인 워크플로 자동화 검토가 진행 중입니다 [2].",
+   "citations": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q003",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 23623.01060000027,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q005",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "전산실-인프라-점검-공지/점검-공지-전산실-ups-배터리-교체-작업-2026-08-02.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "empty": false,
+   "latency_ms": 25042.158099997323,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "무선 AP 교체 대상은 전 사업장 총 120대이며, 현재까지 76대가 교체 완료되었습니다 [1].",
+   "citations": [
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md"
+   ],
+   "refused": false,
+   "fact_recall": 0.0,
+   "correct": false,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q006",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md"
+   ],
+   "empty": false,
+   "latency_ms": 21123.60500000068,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "정민호 [1]",
+   "citations": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q007",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-당직-운영-기준.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "인프라팀-당직표-2026년-10월/2026년-10월-인프라팀-당직표.md"
+   ],
+   "empty": false,
+   "latency_ms": 19451.38759999827,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "신입 직원은 입사 후 3개월이 지난 뒤 당직에 편성합니다 [1].",
+   "citations": [
+    "general/인프라팀-당직-운영-기준.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q008",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md",
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "general/인프라팀-당직-운영-기준.md"
+   ],
+   "empty": false,
+   "latency_ms": 27431.105299998308,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q011",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md",
+    "vpn-계정-신청-기록/vpn-계정-신청-서지안-보안팀.md"
+   ],
+   "empty": false,
+   "latency_ms": 28368.799800002307,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "관리자 계정과 VPN 접속 계정은 다중 인증(MFA)을 필수로 적용해야 합니다 [1].",
+   "citations": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q013",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/license-inventory-2026.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 23355.60390000319,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "백업 소프트웨어의 활용률은 64%입니다 [1].",
+   "citations": [
+    "general/license-inventory-2026.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q014",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md"
+   ],
+   "empty": false,
+   "latency_ms": 35291.691500002344,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 0.9060254355346823,
+   "answer": "log-srv-02 서버가 가장 길었으며, 복구 시간은 130분(2시간 10분)이었습니다 [4].",
+   "citations": [
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q015",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "전산실-인프라-점검-공지/점검-공지-전산실-ups-배터리-교체-작업-2026-08-02.md",
+    "전산실-정기-점검-체크리스트/월간점검---전산실-정기-점검-체크리스트-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md"
+   ],
+   "empty": false,
+   "latency_ms": 22556.004000005487,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "교체 비용은 1,850만원입니다 [1].",
+   "citations": [
+    "전산실-인프라-점검-공지/점검-공지-전산실-ups-배터리-교체-작업-2026-08-02.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q016",
+   "type": "numeric",
+   "space": "dept-b",
+   "split": "tune",
+   "hits": [
+    "2026년-복지-제도-안내/2026년-복지-제도-안내.md",
+    "general/인사팀-채용-회의록-2026-09-15.md",
+    "급여-및-상여-지급-정책/2026년-급여-및-상여-지급-일정-안내.md",
+    "경비-청구-및-정산-기준/경비-청구-및-정산-기준.md",
+    "2026년-하반기-전사-경비-예산-계획/메모-2026년-하반기-전사-경비-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 15484.002600001986,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "연간 복지포인트는 1인당 800,000원입니다 [1].",
+   "citations": [
+    "2026년-복지-제도-안내/2026년-복지-제도-안내.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q018",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md",
+    "general/minutes-weekly-20261001.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md"
+   ],
+   "empty": false,
+   "latency_ms": 25336.03829999629,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "2026-10-11 (일) 04:00 [1]",
+   "citations": [
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q019",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 34541.8084999983,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "변경관리 대장에 따르면, 코어 스위치 CSW-01의 펌웨어 v9.4.5 적용 건(CR-0702)의 위험도는 높음이며 승인자는 임수정입니다 [1].",
+   "citations": [
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q020",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 26157.304000000295,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "야간 백업 작업 14개 중 5개가 실패했습니다 [1].",
+   "citations": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q021",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md"
+   ],
+   "empty": false,
+   "latency_ms": 29930.20550000074,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "2026년 대비 800만원 증가합니다 [1].\n(또는)\n합계가 1억 1,750만원에서 1억 2,550만원으로 늘어나 총 800만원이 증가했습니다 [1], [2].",
+   "citations": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q024",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 27351.872700004606,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "갱신 계약 체결 기한은 2026년 11월 30일까지이며, 이 기한을 넘겨서 체결할 경우 재가입비 10%가 추가됩니다 [1].",
+   "citations": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q026",
+   "type": "lookup",
+   "space": "dept-b",
+   "split": "tune",
+   "hits": [
+    "2026년-복지-제도-안내/2026년-복지-제도-안내.md",
+    "휴가-신청서-leave-request-form/form-leave-request.md",
+    "hr-시스템-이슈-관리/인사-시스템-이슈-리스트-2026년-3분기.md",
+    "경비-청구-및-정산-기준/경비-청구-및-정산-기준.md",
+    "2026년-하반기-전사-경비-예산-계획/메모-2026년-하반기-전사-경비-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 18201.356400000805,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "미사용 연차는 해당 연도 12월 31일에 소멸합니다 [1].",
+   "citations": [
+    "2026년-복지-제도-안내/2026년-복지-제도-안내.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q028",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 22984.823899998446,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q031",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "general/인프라팀-당직-운영-기준.md",
+    "인프라팀-당직표-2026년-10월/2026년-10월-인프라팀-당직표.md",
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md"
+   ],
+   "empty": false,
+   "latency_ms": 22200.96249999915,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q032",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md"
+   ],
+   "empty": false,
+   "latency_ms": 23244.365300000936,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "answer": "월말 정산 기간(매월 25일부터 말일까지)에 WAS 상태를 하루 2회 점검하는 규칙을 마련했습니다 [2].",
+   "citations": [
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q033",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "general/license-inventory-2026.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "전산실-인프라-점검-공지/점검-공지-전산실-ups-배터리-교체-작업-2026-08-02.md"
+   ],
+   "empty": false,
+   "latency_ms": 8375.5170000004,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q034",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md"
+   ],
+   "empty": false,
+   "latency_ms": 19427.811599998677,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "해든DB의 2026년 유지보수 금액은 8,300만원이었습니다 [1], [2].",
+   "citations": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q035",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "mail-gateway-incident-report-mail-gw-01/메일-발송-지연-장애-보고서.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md"
+   ],
+   "empty": false,
+   "latency_ms": 20642.449099999794,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "애플리케이션[1]",
+   "citations": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q036",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "general/minutes-weekly-20261001.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 28245.17499999638,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "로그 소스 연동, 탐지 룰 튜닝, 모의 해킹 점검이 동시에 진행됩니다 [1].",
+   "citations": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q039",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md"
+   ],
+   "empty": false,
+   "latency_ms": 21314.73260000348,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q040",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 36172.449799996684,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "stale_top1": false,
+   "answer": "ERP DB 클라우드 이전 예산은 1억 4,500만원으로 증액되어 결정되었습니다 [1].",
+   "citations": [
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q041",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "general/인프라팀-당직-운영-기준.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 20594.680800000788,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q042",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-당직-운영-기준.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "인프라팀-당직표-2026년-10월/2026년-10월-인프라팀-당직표.md",
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md"
+   ],
+   "empty": false,
+   "latency_ms": 25130.385399999795,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q043",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md"
+   ],
+   "empty": false,
+   "latency_ms": 23856.41709999618,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "[1]에 따르면 db-prd-01 디스크 용량 부족 장애의 장애 등급은 2등급이었습니다.",
+   "citations": [
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q046",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "general/minutes-weekly-20261001.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 20616.14659999759,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q047",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 22053.961899997375,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "stale_top1": false,
+   "answer": "일간 백업은 현재 14일 동안 보관합니다 [2].",
+   "citations": [
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md"
+   ],
+   "refused": false,
+   "fact_recall": 0.0,
+   "correct": false,
+   "citation_ok": false,
+   "leak": []
+  },
+  {
+   "id": "q048",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "vpn-계정-신청-기록/vpn-계정-신청-서지안-보안팀.md",
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md"
+   ],
+   "empty": false,
+   "latency_ms": 19912.049200000183,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "방화벽 정책 변경 작업의 변경 관리 번호는 CR-0925입니다 [1], [2].",
+   "citations": [
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q050",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/minutes-weekly-20261001.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md"
+   ],
+   "empty": false,
+   "latency_ms": 17535.303799995745,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "보안팀 소속 참석자는 윤가람과 서지안입니다 [1].",
+   "citations": [
+    "general/minutes-weekly-20261001.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q051",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md"
+   ],
+   "empty": false,
+   "latency_ms": 24151.448399999936,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "감염 후 발견까지 평균 20일 정도 걸린다는 자료를 참고했습니다 [1].",
+   "citations": [
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q052",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md"
+   ],
+   "empty": false,
+   "latency_ms": 20501.053600004525,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "서울센터의 R02에 있습니다 [1].",
+   "citations": [
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q053",
+   "type": "multi_doc",
+   "space": "dept-b",
+   "split": "tune",
+   "hits": [
+    "general/인사팀-채용-회의록-2026-09-15.md",
+    "2026년-하반기-인건비-예산/인건비-예산표-h2-2026.md",
+    "2026년-복지-제도-안내/2026년-복지-제도-안내.md",
+    "인사평가-운영-기준/인사평가-운영-기준.md",
+    "2026년-하반기-전사-경비-예산-계획/메모-2026년-하반기-전사-경비-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 22010.839400005352,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "2027년 상반기 신입 공채 인원은 12명이며, 2027년 정원 증원 인원은 총 18명입니다 [1].",
+   "citations": [
+    "general/인사팀-채용-회의록-2026-09-15.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q059",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md"
+   ],
+   "empty": false,
+   "latency_ms": 23303.4406999941,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "스토리지 증설 후 총 용량은 64TB이며, 증설을 추진하게 된 현재 NAS 전체 사용률은 71%입니다 [1], [2].",
+   "citations": [
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q061",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 19832.44520000153,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "30일이 지난 로그 640GB를 압축 후 삭제했습니다 [1].",
+   "citations": [
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q062",
+   "type": "table_merged",
+   "space": "dept-b",
+   "split": "tune",
+   "hits": [
+    "2026년-하반기-인건비-예산/인건비-예산표-h2-2026.md",
+    "2026년-하반기-전사-경비-예산-계획/메모-2026년-하반기-전사-경비-예산-계획.md",
+    "general/인사팀-채용-회의록-2026-09-15.md",
+    "재무-결산-실적/2026년-3분기-잠정-결산-현황.md",
+    "인사평가-운영-기준/인사평가-운영-기준.md"
+   ],
+   "empty": false,
+   "latency_ms": 16943.52390000131,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "영업본부의 하반기 예산은 4,300 백만원입니다 [1], [3].",
+   "citations": [
+    "2026년-하반기-인건비-예산/인건비-예산표-h2-2026.md",
+    "general/인사팀-채용-회의록-2026-09-15.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q063",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 29684.071499999845,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "VPN 장애로 영향받은 사용자 수는 재택근무자 및 외근자 87명이며 [1], 임시 게이트웨이(vpn-gw-02)의 동시 접속 한도는 30명입니다 [2].",
+   "citations": [
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q064",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 27595.26200000255,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "누리메일 서버 이전 예산은 4,200만원으로 확정되었습니다 [1], [2].",
+   "citations": [
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q065",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md"
+   ],
+   "empty": false,
+   "latency_ms": 25533.889700003783,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "stale_top1": false,
+   "answer": "가온ERP 데이터베이스의 클라우드 이전 일정은 **2027년 2월 20일**로 연기되었습니다 [2].",
+   "citations": [
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q066",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "vpn-계정-신청-기록/vpn-계정-신청-서지안-보안팀.md"
+   ],
+   "empty": false,
+   "latency_ms": 20421.599499997683,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "stale_top1": false,
+   "answer": "비밀번호를 연속 5회 틀리면 계정이 15분 동안 잠깁니다 [1].",
+   "citations": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q067",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "general/license-inventory-2026.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md"
+   ],
+   "empty": false,
+   "latency_ms": 29099.60719999799,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "fact_recall": 0.0,
+   "correct": false,
+   "citation_ok": false,
+   "leak": []
+  },
+  {
+   "id": "q068",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/minutes-weekly-20261001.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 24367.263700005424,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "answer": "윤가람입니다 [2][3].",
+   "citations": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q069",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-당직-운영-기준.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "general/인프라팀-주간회의록-2026-07-13.md"
+   ],
+   "empty": false,
+   "latency_ms": 20920.56419999426,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "임수정 본부장입니다 [1].",
+   "citations": [
+    "general/인프라팀-당직-운영-기준.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q070",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md"
+   ],
+   "empty": false,
+   "latency_ms": 31955.743200000143,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "db-prd-01 장애의 복구 시간은 45분입니다 [2].\nnas-bk-03 장애의 복구 시간은 80분입니다 [1][3].",
+   "citations": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q071",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "general/인프라팀-주간회의록-2026-07-13.md"
+   ],
+   "empty": false,
+   "latency_ms": 26632.447699994373,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "스위치 펌웨어 v9.4.2에 존재하는 알려진 버그로 인해 메모리 누수가 누적되면서 가용 메모리가 고갈되었기 때문입니다 [1].",
+   "citations": [
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q072",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/license-inventory-2026.md"
+   ],
+   "empty": false,
+   "latency_ms": 21980.474000003596,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q073",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "데이터-백업-및-시스템-복구-절차/백업-및-복구-절차서.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md"
+   ],
+   "empty": false,
+   "latency_ms": 22418.79920000065,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "answer": "90일에서 60일로 단축되었습니다 [2].",
+   "citations": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q074",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "mail-gateway-incident-report-mail-gw-01/메일-발송-지연-장애-보고서.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "empty": false,
+   "latency_ms": 24829.501100000925,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "담당자는 이하준, 보조는 한지우로 정해졌습니다 [1].",
+   "citations": [
+    "general/인프라팀-주간회의록-2026-07-13.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q075",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md",
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "장애-보고서-디스크-용량-부족/장애-보고서-log-srv-02-디스크-용량-부족-2026-05-21.md",
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md"
+   ],
+   "empty": false,
+   "latency_ms": 28841.741999996884,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "새벽에 주문 등록 오류가 발생한 서버는 운영 데이터베이스 서버 **db-prd-01**이며, 정상으로 돌아오기까지 소요된 시간은 **45분**입니다 [1].",
+   "citations": [
+    "장애-보고서-db-디스크-용량-부족/장애-보고서-db-prd-01-디스크-용량-부족-2026-03-12.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q076",
+   "type": "unanswerable",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md"
+   ],
+   "empty": false,
+   "latency_ms": 22189.904900005786,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q077",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 23865.256099998078,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "부산센터에 있습니다 [1][3].",
+   "citations": [
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q080",
+   "type": "numeric",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 23579.87100000173,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "2026년 하반기(7~12월) IT 인프라 예산은 총 6억 2,000만원입니다 [1].",
+   "citations": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q081",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md",
+    "서버-및-네트워크-자산-현황-server-and-network-asset-status/서버-자산-대장-및-ip-현황.md"
+   ],
+   "empty": false,
+   "latency_ms": 33265.413099994475,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "18분 만에 수습되었습니다 [1], [3].",
+   "citations": [
+    "was-메모리-부족-oom-오류-장애-보고서/장애-보고서-was-prd-02-메모리-부족-oom-오류-2026-09-03.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q082",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "vpn-계정-신청-기록/vpn-계정-신청-서지안-보안팀.md",
+    "general/인프라팀-주간회의록-2026-07-13.md"
+   ],
+   "empty": false,
+   "latency_ms": 18815.38229999569,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "stale_top1": false,
+   "answer": "비밀번호는 180일마다 변경해야 합니다 [1].",
+   "citations": [
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q084",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "장애-보고서-vpn-gateway/장애-보고서-vpn-게이트웨이-접속-오류---인증서-만료-2026-06-19.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "vpn-접속-불가-안내-및-임시-접속-방법/메일-긴급-vpn-접속-불가-안내-및-임시-접속-방법.md",
+    "코어-스위치-csw-01-다운-장애-보고서/장애-보고서-코어-스위치-csw-01-다운-2026-07-07.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 23805.625399996643,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "answer": "2026년 6월 20일입니다 [2].",
+   "citations": [
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q085",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/인프라팀-당직-운영-기준.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "empty": false,
+   "latency_ms": 10591.003999994427,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q086",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "general/license-inventory-2026.md",
+    "general/인프라팀-당직-운영-기준.md",
+    "비밀번호-관리-정책/정보보안-정책-비밀번호-관리-기준-2025년-개정.md"
+   ],
+   "empty": false,
+   "latency_ms": 21437.47710000025,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q087",
+   "type": "latest",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "서버-os-보안-패치-작업-안내/변경-공지-서버-os-보안-패치-작업-안내-2026년-10월-10일.md",
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 25443.870299997798,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.5,
+   "ndcg": 0.6309297535714575,
+   "stale_top1": true,
+   "answer": "하루 평균 23건으로 감소하였습니다 [2].",
+   "citations": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q091",
+   "type": "cross_space",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "general/license-inventory-2026.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "mail-gateway-incident-report-mail-gw-01/메일-발송-지연-장애-보고서.md"
+   ],
+   "empty": false,
+   "latency_ms": 22264.176699995005,
+   "recall": 0.0,
+   "hit": 0.0,
+   "hit1": 0.0,
+   "mrr": 0.0,
+   "ndcg": 0.0,
+   "answer": "근거 없음",
+   "citations": [],
+   "refused": true,
+   "correct": true,
+   "leak": []
+  },
+  {
+   "id": "q092",
+   "type": "lookup",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "general/인프라팀-당직-운영-기준.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 20982.00899999938,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "정유나가 담당자입니다 [1].",
+   "citations": [
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q093",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/인프라팀-주간회의록-2026-07-13.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "empty": false,
+   "latency_ms": 34685.37970000034,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 0.0,
+   "mrr": 0.3333333333333333,
+   "ndcg": 0.5706417189553201,
+   "answer": "메일 서버 이전 예산은 4,200만원[4], [2]이며, ERP DB 클라우드 이전 예산은 1억 4,500만원[3]입니다. 따라서 두 금액을 합치면 총 1억 8,700만원입니다.",
+   "citations": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/인프라팀-주간회의록-2026-07-13.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q094",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "전산실-정기-점검-체크리스트/월간점검---전산실-정기-점검-체크리스트-2026년-10월.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "방화벽-정책-변경-공지-fw-edge-01/변경-공지-방화벽-fw-edge-01-정책-변경-작업-안내.md"
+   ],
+   "empty": false,
+   "latency_ms": 21727.12799999863,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "비상등 점등 항목은 **안전** 구분이며, 판정은 **조치 필요**로 나왔습니다 [1].",
+   "citations": [
+    "전산실-정기-점검-체크리스트/월간점검---전산실-정기-점검-체크리스트-2026년-10월.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q095",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "2026년-변경-관리-대장-change-request-log/2026년-변경-관리-대장-요약.md",
+    "storage-capacity-incident-report-nas-bk-03/장애-nas-bk-03-백업-볼륨-용량-가득-참-2026년-8월-14일.md"
+   ],
+   "empty": false,
+   "latency_ms": 30912.002400000347,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "*   **2분기 조치:** 서비스 수동 재시작 (임시 조치) [1]\n*   **3분기 조치:** 매일 새벽 재시작 스크립트 적용 [2]",
+   "citations": [
+    "인프라팀-이슈-리스트-2026년-2분기/인프라팀-이슈-리스트-2026년-2분기.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q096",
+   "type": "multi_doc",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md",
+    "general/minutes-weekly-20261001.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md"
+   ],
+   "empty": false,
+   "latency_ms": 26763.500799999747,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "8월 31일 회의에서는 24개, 9월 말 보고서에서는 31개였습니다. [2][1]",
+   "citations": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-31.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q099",
+   "type": "table_merged",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md",
+    "2027년-소프트웨어-라이선스-예산-계획/2027년-소프트웨어-라이선스-예산안.md",
+    "백업-보관-정책-변경/메일-re-백업-보관-정책-변경-요청-건.md",
+    "general/license-inventory-2026.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "empty": false,
+   "latency_ms": 43373.61300000339,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "30,000만 원 + 30,000만 원 + 30,000만 원 = 총 90,000만원입니다 [1].",
+   "citations": [
+    "it-인프라-예산-계획/2026년-하반기-it-인프라-예산-계획.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  },
+  {
+   "id": "q100",
+   "type": "paraphrase",
+   "space": "dept-a",
+   "split": "tune",
+   "hits": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md",
+    "스토리지-증설-프로젝트-현황-보고/프로젝트-현황-보고-스토리지-증설-2026년-10월.md",
+    "2026년-3분기-장애-대응-현황-요약/2026년-3분기-장애-대응-현황-요약.md",
+    "무선-ap-교체-사업-프로젝트-현황-보고/프로젝트-현황-보고-무선-ap-교체-사업-2026년-9월.md",
+    "인프라팀-주간회의록/인프라팀-주간회의록-2026-08-10.md"
+   ],
+   "empty": false,
+   "latency_ms": 25986.215199998696,
+   "recall": 1.0,
+   "hit": 1.0,
+   "hit1": 1.0,
+   "mrr": 1.0,
+   "ndcg": 1.0,
+   "answer": "레거시 장비 17종의 로그 형식이 표준과 달라 파서 개발이 추가로 필요했기 때문입니다 [1].",
+   "citations": [
+    "general/프로젝트-현황-보고-통합-보안관제-siem-구축-2026년-9월.md"
+   ],
+   "refused": false,
+   "fact_recall": 1.0,
+   "correct": true,
+   "citation_ok": true,
+   "leak": []
+  }
+ ]
+}

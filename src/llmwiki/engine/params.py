@@ -9,14 +9,18 @@ MODES = ("bm25", "dense", "hybrid")
 
 @dataclass(frozen=True)
 class RetrievalParams:
-    top_k: int = 5  # hits fed to the LLM
-    candidate_pool: int = 50  # candidates kept per retriever before fusion
-    rrf_k: int = 60  # reciprocal-rank-fusion constant
+    # Retrieval defaults chosen on the 100-question synthetic set with LM Studio bge-m3 (docs/RAG-TUNING-REPORT.md):
+    # tied with the old defaults on the tune split, ~2 questions better on the held-out split (a weak signal, and the
+    # choice was made after seeing it). They depend on the embedding model and corpus: re-run the eval harness on
+    # real documents before trusting them. Generation knobs (temperature, max_context_chars) are left unchanged.
+    top_k: int = 8  # hits fed to the LLM
+    candidate_pool: int = 20  # candidates kept per retriever before fusion
+    rrf_k: int = 30  # reciprocal-rank-fusion constant
     w_bm25: float = 1.0  # fusion weights
-    w_dense: float = 1.0
+    w_dense: float = 0.5
     min_cosine: float = 0.0  # dense candidates must have cosine > this (0.0: any positive similarity)
-    bm25_k1: float = 1.5
-    bm25_b: float = 0.75
+    bm25_k1: float = 0.9
+    bm25_b: float = 0.4
     max_context_chars: int = 0  # per-article cap in the prompt; 0 = unlimited
     temperature: float | None = None  # None = the LLM client's own default
     retrieval_mode: str = "hybrid"  # "bm25" | "dense" | "hybrid" (hybrid/dense degrade without an embedder)

@@ -1,0 +1,16 @@
+{
+ "params": {
+  "top_k": 8,
+  "candidate_pool": 20,
+  "rrf_k": 30,
+  "w_bm25": 1.0,
+  "w_dense": 0.5,
+  "min_cosine": 0.0,
+  "bm25_k1": 0.9,
+  "bm25_b": 0.4,
+  "max_context_chars": 2000,
+  "temperature": 0.3,
+  "retrieval_mode": "hybrid"
+ },
+ "score": 0.961818
+}
