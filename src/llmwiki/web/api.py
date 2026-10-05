@@ -25,7 +25,10 @@ def healthz(app, req: Request, session):
 
 
 def me(app, req: Request, session):
-    return json_response(200, user_payload(session.user, session.csrf))
+    body = user_payload(session.user, session.csrf)
+    if app.cfg.personal:
+        body["personal"] = True  # the UI hides logout / the space selector and shows the status line
+    return json_response(200, body)
 
 
 def query(app, req: Request, session):
@@ -36,7 +39,9 @@ def query(app, req: Request, session):
     service = QueryService(app.settings, app.store, app.llm, app.audit, embedder=app.embedder)
     try:
         res = service.query(session.user, q.strip())
-    except LLMError:
+    except LLMError as exc:
+        if getattr(exc, "busy", False):  # personal mode: waited too long behind document processing
+            raise HttpError(503, "llm_busy") from None
         log.error("llm unavailable")
         raise HttpError(502, "llm_unavailable") from None
     cites = [{"path": p, "title": app.store.article_title(p) or p} for p in res.citations]

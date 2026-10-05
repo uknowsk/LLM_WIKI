@@ -57,8 +57,8 @@ class SessionGrant:
         return [("Set-Cookie", self.cookie)]
 
 
-def build_cookie(name: str, value: str, *, max_age: int, secure: bool) -> str:
-    parts = [f"{name}={value}", "Path=/", f"Max-Age={max_age}", "HttpOnly", "SameSite=Lax"]
+def build_cookie(name: str, value: str, *, max_age: int, secure: bool, samesite: str = "Lax") -> str:
+    parts = [f"{name}={value}", "Path=/", f"Max-Age={max_age}", "HttpOnly", f"SameSite={samesite}"]
     if secure:
         parts.append("Secure")
     return "; ".join(parts)
@@ -99,7 +99,7 @@ class SessionAuth:
 
     @property
     def cookie_name(self) -> str:
-        return "__Host-wiki_sid" if self.cfg.cookie_secure else "wiki_sid"
+        return ("__Host-wiki_sid" if self.cfg.cookie_secure else "wiki_sid") + self.cfg.cookie_suffix
 
     def mac(self, value: str) -> str:
         return hmac.new(self.cfg.session_secret, value.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -127,7 +127,7 @@ class SessionAuth:
                 (self._hash(sid), user.id, _user_to_json(user), csrf, now, now))
             self._db.commit()
         cookie = build_cookie(self.cookie_name, f"{sid}.{self.mac(sid)}", max_age=self.cfg.absolute_ttl,
-                              secure=self.cfg.cookie_secure)
+                              secure=self.cfg.cookie_secure, samesite=self.cfg.samesite)
         return SessionGrant(user, csrf, cookie)
 
     def resolve(self, cookie_header: str | None) -> Session | None:
@@ -169,7 +169,7 @@ class SessionAuth:
         return n
 
     def clear_cookie(self) -> str:
-        return build_cookie(self.cookie_name, "", max_age=0, secure=self.cfg.cookie_secure)
+        return build_cookie(self.cookie_name, "", max_age=0, secure=self.cfg.cookie_secure, samesite=self.cfg.samesite)
 
     def _purge(self, now: float) -> None:
         self._db.execute("DELETE FROM sessions WHERE created < ? OR last_seen < ?",

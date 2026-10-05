@@ -12,3 +12,7 @@ denied
 str`
 .claude/skills/ruflo/
 eval/results/*.sqlite
+.env.personal
+.env.*
+!config/env.example
+!config/env.personal.example

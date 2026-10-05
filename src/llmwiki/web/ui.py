@@ -35,6 +35,7 @@ button.primary { background: #1f3a5f; color: #fff; }
 .error { color: #b00020; }
 .ok { color: #1b6e2d; }
 .muted { color: #667; font-size: 90%; }
+header .muted { color: #cfd8e6; margin-right: 8px; }
 pre { background: #eef0f4; padding: 8px; overflow: auto; }
 """
 

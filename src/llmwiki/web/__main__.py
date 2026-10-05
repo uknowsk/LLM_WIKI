@@ -120,6 +120,10 @@ def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="llmwiki.web", description="LLM Wiki web server")
     ap.add_argument("--server", choices=("waitress", "wsgiref"), default=None, help="default: $WIKI_SERVER, else waitress if installed")
     args = ap.parse_args(argv)
+    if "personal" in ((os.environ.get("WIKI_MODE") or "").strip().lower(),
+                      (os.environ.get("WIKI_AUTH_PROVIDER") or "").strip().lower()):
+        sys.exit("llmwiki.web: personal mode is a separate single-user program: run `python -m llmwiki.personal` "
+                 "(this central server never starts in personal mode)")
     logging.basicConfig(level=logging.INFO)
     try:
         kind = resolve_server(args.server)

@@ -67,6 +67,8 @@ class WikiApp:
                  embedder: Embedder | None = None):
         if isinstance(auth_provider, DevAuthProvider) and not is_dev_env(settings):
             raise RuntimeError("Dev auth provider is allowed only when WIKI_ENV is 'development' or 'test'")
+        if getattr(auth_provider, "personal_only", False) and not cfg.personal:
+            raise RuntimeError("The personal auth provider is only available through `python -m llmwiki.personal`")
         self.settings, self.llm, self.store, self.embedder = settings, llm, store, embedder
         self.audit = AuditGuard(audit, clock)  # truncates + coalesces repeated denials
         self._limiter = RateLimiter(clock)

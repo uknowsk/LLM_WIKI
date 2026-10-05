@@ -5,7 +5,8 @@ APP_JS = r"""
 (function () {
   'use strict';
   var root = document.getElementById('app');
-  var state = { me: null, csrf: null, tab: 'ask' };
+  var state = { me: null, csrf: null, tab: 'ask', wasPersonal: false, pst: null };
+  var statusLine = null, askNote = null;
 
   function h(tag, attrs) {
     var el = document.createElement(tag);
@@ -33,7 +34,10 @@ APP_JS = r"""
     if (opts.raw !== undefined) { headers['Content-Type'] = 'application/octet-stream'; init.body = opts.raw; }
     return fetch(url, init).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (data) {
-        if (r.status === 401 && url !== '/login') { state.me = null; state.csrf = null; render(); }
+        if (r.status === 401 && url !== '/login') {
+          state.wasPersonal = !!(state.me && state.me.personal) || state.wasPersonal;
+          state.me = null; state.csrf = null; render();
+        }
         return { status: r.status, ok: r.ok, data: data };
       });
     });
@@ -41,7 +45,7 @@ APP_JS = r"""
   var ERR = { unauthorized: '로그인이 필요합니다.', invalid_credentials: '로그인에 실패했습니다.', forbidden: '권한이 없습니다.',
     not_found: '문서를 찾을 수 없습니다.', csrf: '요청이 거부되었습니다. 새로고침 후 다시 시도하세요.', too_large: '파일이 너무 큽니다.',
     bad_extension: '허용되지 않는 파일 형식입니다 (.eml .md .txt .docx .xlsx .pdf).', bad_filename: '파일 이름이 올바르지 않습니다.',
-    llm_unavailable: '답변 서버에 연결할 수 없습니다.', bad_content: '파일 내용이 형식과 일치하지 않습니다.' };
+    llm_unavailable: '답변 서버에 연결할 수 없습니다.', llm_busy: '문서 처리 중이라 답변이 지연됩니다. 잠시 후 다시 시도하세요.', bad_content: '파일 내용이 형식과 일치하지 않습니다.' };
   function errText(d) { return (d && ERR[d.error]) || '오류가 발생했습니다.'; }
 
   // ---- article HTML: rebuild from allow-list ----
@@ -72,6 +76,11 @@ APP_JS = r"""
   }
 
   // ---- views ----
+  function expiredView() {
+    return h('section', {}, h('h2', { text: '세션이 만료되었습니다' }),
+      h('p', { text: '개인 위키를 실행한 창에 표시된 주소로 다시 접속하세요.' }));
+  }
+
   function loginView() {
     var msg = h('p', { 'class': 'error' });
     var input = h('input', { id: 'uid', placeholder: '사용자 ID', autocomplete: 'username' });
@@ -95,7 +104,34 @@ APP_JS = r"""
     return box;
   }
 
+  function noteText() {
+    return state.pst && state.pst.working ? '문서 처리 중이라 답변이 늦어질 수 있습니다' : '';
+  }
+
+  function refreshStatus() {
+    if (!state.me || !state.me.personal) return;
+    api('GET', '/api/personal/status').then(function (r) {
+      if (!r.ok) return;
+      state.pst = r.data;
+      if (statusLine) statusLine.textContent = '개인 위키 · 처리 대기 ' + r.data.pending + '건 / 실패 ' + r.data.failed + '건';
+      if (askNote) askNote.textContent = noteText();
+    });
+  }
+
+  function settingsView() {
+    var box = h('section', {}, h('h2', { text: '설정' }));
+    api('GET', '/api/personal/info').then(function (r) {
+      if (!r.ok) { box.appendChild(h('p', { 'class': 'error', text: errText(r.data) })); return; }
+      box.appendChild(h('p', { text: '데이터 폴더: ' + r.data.home }));
+      box.appendChild(h('p', { text: '위키 폴더(옵시디언): ' + r.data.wiki }));
+      box.appendChild(h('p', { text: '감시 폴더: ' + (r.data.watch.length ? r.data.watch.join(' ; ') : '(없음)') }));
+      box.appendChild(h('p', { 'class': 'muted', text: '원본 파일은 읽기만 하며 이동·수정·삭제하지 않습니다. 변경은 환경 파일(WIKI_PERSONAL_WATCH)에서 합니다.' }));
+    });
+    return box;
+  }
+
   function askView() {
+    askNote = h('p', { 'class': 'muted', text: noteText() });
     var q = h('textarea', { rows: '3', maxlength: '2000', placeholder: '질문을 입력하세요' });
     var out = h('div', {});
     function ask() {
@@ -113,7 +149,7 @@ APP_JS = r"""
         out.appendChild(cites);
       });
     }
-    return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), out);
+    return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), askNote, out);
   }
 
   var articleBox = h('section', { id: 'article' });
@@ -142,6 +178,7 @@ APP_JS = r"""
   function uploadView() {
     var sel = h('select', {});
     state.me.spaces.forEach(function (s) { sel.appendChild(h('option', { value: s, text: s })); });
+    var single = state.me.spaces.length === 1;  // one space: no choice to make, use it automatically
     var file = h('input', { type: 'file', accept: '.eml,.md,.txt,.docx,.xlsx,.pdf' });
     var msg = h('p', {});
     function send() {
@@ -154,20 +191,26 @@ APP_JS = r"""
         msg.textContent = r.ok ? '업로드 완료: ' + r.data.name : errText(r.data);
       });
     }
-    return h('section', {}, h('h2', { text: '업로드' }), h('label', { text: '공간' }), sel, file,
+    return h('section', {}, h('h2', { text: '업로드' }), single ? null : h('label', { text: '공간' }), single ? null : sel, file,
       h('button', { 'class': 'primary', text: '업로드', on: { click: send } }), msg);
   }
 
   function render() {
     clear(root);
-    if (!state.me) { root.appendChild(loginView()); return; }
-    root.appendChild(h('header', {}, h('strong', { text: '사내 위키' }),
-      h('span', {}, state.me.name + ' (' + state.me.department + ')',
-        h('button', { text: '로그아웃', on: { click: function () {
+    if (!state.me) { root.appendChild(state.wasPersonal ? expiredView() : loginView()); return; }
+    var personal = !!state.me.personal;
+    if (personal) document.title = '개인 위키';
+    statusLine = personal ? h('span', { 'class': 'muted' }) : null;
+    if (statusLine && state.pst) statusLine.textContent = '개인 위키 · 처리 대기 ' + state.pst.pending + '건 / 실패 ' + state.pst.failed + '건';
+    root.appendChild(h('header', {}, h('strong', { text: personal ? '개인 위키' : '사내 위키' }),
+      h('span', {}, statusLine, personal ? null : state.me.name + ' (' + state.me.department + ')',
+        personal ? null : h('button', { text: '로그아웃', on: { click: function () {
           api('POST', '/logout').then(function () { state.me = null; state.csrf = null; render(); }); } } }))));
-    var views = { ask: askView, doc: docView, up: uploadView };
+    var views = { ask: askView, doc: docView, up: uploadView, set: settingsView };
+    var tabs = [['ask', '질문'], ['doc', '문서'], ['up', '업로드']];
+    if (personal) tabs.push(['set', '설정']);
     var nav = h('nav', {});
-    [['ask', '질문'], ['doc', '문서'], ['up', '업로드']].forEach(function (t) {
+    tabs.forEach(function (t) {
       nav.appendChild(h('button', { text: t[1], 'class': state.tab === t[0] ? 'active' : '',
         on: { click: function () { state.tab = t[0]; render(); } } }));
     });
@@ -184,7 +227,8 @@ APP_JS = r"""
   window.addEventListener('hashchange', route);
   api('GET', '/api/me').then(function (r) {
     if (r.ok) { state.me = r.data; state.csrf = r.data.csrf; }
-    render(); route();
+    render(); route(); refreshStatus();
   });
+  setInterval(refreshStatus, 5000);
 })();
 """

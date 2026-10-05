@@ -156,12 +156,12 @@ def process_file(
     mask_policy: Mapping[str, bool] | None = None,
     embedder: Embedder | None = None,
     aliases: AliasMap | None = None,
-    verify_folder: bool = False,
+    verify_folder: bool = True,
 ) -> ProcessResult:
     """Ingest one file. Never raises for file-level problems; see ProcessResult.status.
 
-    verify_folder=True (the central pipeline): the job's `space` is re-derived from the inbox folder (+ aliases) and a
-    mismatch is rejected without moving anything. Off for personal mode, where one fixed space covers all subfolders."""
+    verify_folder=True (default, fail closed): the job's `space` is re-derived from the inbox folder (+ aliases) and a
+    mismatch is rejected without moving anything. Callers must opt OUT explicitly (personal mode), where one fixed space covers all subfolders."""
     path = Path(path)
     result = ProcessResult("failed", path, space)
     db = _db(settings)

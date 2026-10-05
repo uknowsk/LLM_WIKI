@@ -34,6 +34,9 @@ class WebConfig:
     rate_user_per_min: int = 120
     rate_login_per_min: int = 20
     trusted_proxies: frozenset[str] = frozenset()  # exact proxy IPs whose X-Forwarded-For is honoured
+    personal: bool = False  # single-user local mode; ONLY set by `python -m llmwiki.personal` (never read from the env)
+    cookie_suffix: str = ""  # appended to the session cookie name (personal mode: per-port, cookies ignore ports)
+    samesite: str = "Lax"  # session cookie SameSite attribute (personal mode uses "Strict")
 
 
 def _int(e, key: str, default: int) -> int:
