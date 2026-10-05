@@ -49,6 +49,7 @@ class Env:
         return p
 
     def process(self, path: Path, space: str, **kw):
+        kw.setdefault("verify_folder", True)  # the central pipeline re-derives the space from the folder
         return process_file(path, space, self.settings, self.llm, self.store, self.audit, **kw)
 
     def run_all(self, **kw):

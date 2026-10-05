@@ -9,6 +9,7 @@ from llmwiki.config import load_settings
 from llmwiki.engine.embed import embedder_from_env
 from llmwiki.engine.llm import OpenAICompatClient
 from llmwiki.engine.store import Store
+from llmwiki.pipeline.aliases import AliasError, load_aliases
 from llmwiki.pipeline.ocr_command import ocr_from_env
 from llmwiki.pipeline.pii_policy import PiiPolicyError, load_pii_policy
 from llmwiki.pipeline.queue import JobQueue
@@ -24,8 +25,8 @@ def main(argv: list[str] | None = None) -> int:
 
     settings = load_settings()
     try:  # fail closed: a bad policy/OCR config must stop startup, never silently disable masking
-        mask_policy, ocr = load_pii_policy(), ocr_from_env()
-    except (PiiPolicyError, ValueError) as exc:
+        mask_policy, ocr, aliases = load_pii_policy(), ocr_from_env(), load_aliases()
+    except (PiiPolicyError, AliasError, ValueError) as exc:
         print(f"startup refused: {exc}", file=sys.stderr)
         return 2
     extractor = None
@@ -40,8 +41,10 @@ def main(argv: list[str] | None = None) -> int:
     llm = OpenAICompatClient.from_settings(settings)
     embedder = embedder_from_env(settings)  # None when WIKI_EMBED_MODEL=off
     process = lambda path, space: process_file(  # noqa: E731
-        path, space, settings, llm, store, audit, embedder=embedder, ocr=ocr, extractor=extractor, mask_policy=mask_policy)
-    watcher = Watcher(settings, queue, audit, min_age=0.0 if args.once else 2.0)
+        path, space, settings, llm, store, audit, embedder=embedder, ocr=ocr, extractor=extractor, mask_policy=mask_policy, aliases=aliases,
+        verify_folder=True)
+    queue.drop_pending()  # pending jobs are re-derived by the next scan (folder/alias may have changed)
+    watcher = Watcher(settings, queue, audit, min_age=0.0 if args.once else 2.0, aliases=aliases)
     try:
         if args.once:
             counts = watcher.scan_once()

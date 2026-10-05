@@ -9,7 +9,7 @@ from llmwiki.engine.llm import FakeLLM
 from llmwiki.engine.query import NO_EVIDENCE, AccessDenied, QueryService
 from llmwiki.engine.store import Store
 from llmwiki.ingest.pdf import FakeOcrEngine
-from llmwiki.pipeline import inbox
+from llmwiki.pipeline import inbox, notes
 from llmwiki.pipeline.queue import JobQueue
 from llmwiki.pipeline.run import process_file
 from llmwiki.pipeline.watch import Watcher
@@ -119,8 +119,8 @@ def test_bad_files_do_not_stop_batch(env):
     failed = {j["path"].replace("\\", "/").split("/")[-1]: j for j in env.queue.jobs("failed")}
     assert set(failed) == {"b-bad.eml", "c-bad.docx", "f-llmdown.md"}
     assert all(j["attempts"] == env.queue.max_attempts and j["last_error"] for j in failed.values())
-    assert "endpoint down" in failed["f-llmdown.md"]["last_error"]
-    assert "malformed eml" in failed["b-bad.eml"]["last_error"]
+    assert "LLMError" in failed["f-llmdown.md"]["last_error"] and "endpoint down" not in failed["f-llmdown.md"]["last_error"]
+    assert "ValueError" in failed["b-bad.eml"]["last_error"] and notes.CORRUPT in failed["b-bad.eml"]["last_error"]
     assert len(env.store.article_paths()) == 3  # a-good, e-good and the fallback article for d-badjson
     moved = [f for f in inbox_files(env, "_failed") if not f.endswith(".reason.txt")]
     assert moved == ["dept-a/b-bad.eml", "dept-a/c-bad.docx", "dept-a/f-llmdown.md"]
@@ -169,7 +169,7 @@ def test_scanned_pdf_without_ocr_fails_clearly(env):
 
     f = env.drop("dept-a", "scan.pdf", b"%PDF-fake")
     res = env.process(f, "dept-a", extractor=Empty())
-    assert res.status == "failed" and "no extractable text" in res.error
+    assert res.status == "failed" and "ValueError" in res.error and notes.UNREADABLE in res.error
 
 
 def test_mixed_spaces_never_merge_and_acl_holds(env):

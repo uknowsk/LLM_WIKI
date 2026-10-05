@@ -163,6 +163,70 @@ related: ["코어-스위치-…/장애-보고서-….md", …]      ← 같은 �
 - 같은 내용을 같은 부서에 다시 넣으면 건너뜁니다(중복 방지). 다른 부서에는 따로 처리됩니다.
 - **개인정보 마스킹을 켠 부서**: 처리가 끝나면 원본 파일은 **삭제**되고 마스킹된 텍스트만 남습니다. **원본은 반드시 본인이 따로 보관하세요.**
 
+### 3-5. 공용 폴더(SMB 공유)로 넣기
+직원이 웹 화면 없이 **네트워크 폴더에 파일만 끌어다 놓는** 방식입니다. 원칙: **부서는 폴더로만 정하고, 그 폴더에 누가 쓸 수 있는지는 Windows(NTFS/공유 권한 + AD 그룹)가 정합니다.** 파이프라인은 파일 내용·소유자·AI로 부서를 추측하지 않습니다.
+
+**폴더 구조 예** (공유 `\\wiki-server\wiki-inbox` = 서버의 `<WIKI_DATA_DIR>\inbox`)
+```
+inbox\
+  dept-hr\          인사팀 그룹만 쓰기      (별칭을 쓰면 인사팀\ 처럼 한글 이름도 가능, 아래 참고)
+  dept-a\           A부서 그룹만 쓰기
+  dept-a\part-1\    A부서 1파트 (필요할 때만)
+  _done\ _rejected\ _failed\   관리자·서비스 계정 전용 (일반 직원에게는 보이지 않게)
+```
+
+**관리자 설정 레시피** **[미검증: 이 PC에서 실행하지 않음]** (관리자 PowerShell, 값은 사내 환경에 맞게 바꿈)
+```powershell
+$inbox = "D:\wiki-data\inbox"                  # = WIKI_DATA_DIR\inbox (서버 로컬 디스크)
+$svc   = "CORP\svc-wiki"                       # 파이프라인 서비스 계정
+$groups = @{ "dept-hr" = "CORP\wiki-hr"; "dept-a" = "CORP\wiki-a"; "dept-a\part-1" = "CORP\wiki-a-p1" }   # space 폴더 = AD 그룹
+New-Item -ItemType Directory -Force $inbox, "$inbox\_done", "$inbox\_rejected", "$inbox\_failed" | Out-Null
+foreach ($d in $groups.Keys) { New-Item -ItemType Directory -Force "$inbox\$d" | Out-Null }
+
+# 1) 루트: 상속(넓은 그룹) 제거 -> SYSTEM/Administrators/서비스 계정만. 직원은 '이 폴더만' 읽기(목록 표시용)
+icacls $inbox /inheritance:r
+icacls $inbox /grant "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" "${svc}:(OI)(CI)M"
+icacls $inbox /grant "NT AUTHORITY\Authenticated Users:(RX)"      # 상속 플래그 없음 = 루트에만 적용
+# 2) 부서 폴더: 해당 AD 그룹에만 Modify (하위 폴더·파일에 상속)
+foreach ($e in $groups.GetEnumerator()) { icacls "$inbox\$($e.Key)" /grant "$($e.Value):(OI)(CI)M" }
+# 3) 공유: 접근 기반 열거(ABE) -> 각 팀에는 자기 폴더만 보임. 공유 권한은 넓게, 실제 제한은 NTFS 가 담당
+New-SmbShare -Name "wiki-inbox" -Path $inbox -FolderEnumerationMode AccessBased `
+  -FullAccess $svc, "BUILTIN\Administrators" -ChangeAccess "NT AUTHORITY\Authenticated Users"
+icacls $inbox /t /c | Out-File .\inbox-acl-report.txt   # 적용 결과 확인(부서 폴더에 다른 부서 그룹이 없는지)
+```
+- 하위 폴더(`dept-a\part-1`)는 상속 때문에 `dept-a` 그룹도 쓸 수 있습니다. 파트를 분리하려면 그 폴더에서 `icacls "$inbox\dept-a\part-1" /inheritance:d` 후 필요한 그룹만 남기세요. 단, 위키 쪽 열람 권한은 정확한 space 이름 단위이므로 사용자 매핑(b-8)도 맞춰야 합니다.
+- Modify 권한이라 같은 폴더 사용자끼리 서로의 파일을 지울 수 있습니다(쓰기 전용 "드롭박스"는 처리결과 메모를 못 읽어 권장하지 않음).
+- 파이프라인 서비스 계정은 **inbox 전체에 Modify** 여야 `_done` 이동과 메모 작성이 됩니다. 확인: `scripts\run-doctor.ps1` 의 `inbox.layout`.
+
+**직원이 하는 일**
+1. 공유 폴더 안의 **내 부서 폴더**에 파일을 복사합니다. 형식을 바꾸려고 이름만 고치지 마세요(`.doc`를 `.docx`로 이름만 바꾸면 깨진 파일이 됩니다. 워드/엑셀에서 *다른 이름으로 저장*).
+2. 약 1분 기다립니다(복사 중·열려 있는 파일은 다음 스캔으로 미룹니다).
+3. 처리되면 파일이 **폴더에서 사라집니다**(관리자 영역 `_done`으로 이동). 사라지는 것이 정상입니다.
+4. 처리하지 못했으면 같은 폴더에 `<파일이름>.처리결과.txt` 가 생깁니다. 사유(지원하지 않는 형식 / 파일이 손상됨 / 읽기 실패 / 처리 실패 등)와 조치가 한글로 적혀 있고, 파일 내용은 들어 있지 않습니다. 고쳐서 같은 이름으로 다시 넣어 처리에 성공하면 메모는 자동으로 지워집니다.
+- 워드·엑셀의 잠금 파일(`~$…`), `Thumbs.db`, `desktop.ini`, `.DS_Store`, 바로가기(`.lnk`), 숨김/시스템 파일, 임시 파일(`.tmp` 등)과 위 메모는 **조용히 무시**합니다(`_rejected`로 보내지 않음).
+- 다른 프로그램이 계속 잡고 있는 파일은 기본 60회 연속 스캔(약 5분, `WIKI_LOCKED_MAX_SCANS`)까지 기다렸다가 포기하고 `_failed` 로 옮기며 '파일을 읽을 권한이 없거나 다른 프로그램이 계속 사용 중입니다' 메모를 남깁니다. 짧게 잠긴 경우는 실패로 세지 않습니다.
+- 바로가기·연결 폴더(심볼릭 링크/정션)는 다른 부서 폴더를 가리킬 수 있어 **처리하지 않고** 관리자 로그에 남깁니다.
+
+**관리자가 하는 일**
+- `inbox` 바로 아래(부서 폴더 밖)에 놓인 파일은 `_rejected\`로 옮겨지고 `.reason.txt`가 붙습니다. 루트에는 메모를 쓰지 않습니다(파일 이름이 모두에게 보이므로). 관리자가 주인을 확인해 올바른 부서 폴더로 옮겨 주세요. 현황은 doctor `inbox.layout` 이 개수만 알려 줍니다.
+
+- **`_rejected\`, `_failed\`, `_done\` 는 관리자 전용**입니다. 여러 부서의 파일 이름과 사유가 섞여 있으므로 직원에게 읽기 권한을 주면 안 됩니다(위 레시피대로면 ABE 로 보이지 않음). `inbox` 바로 아래 `_` 로 시작하는 폴더(대소문자 무관, `_Done` 포함)는 모두 예약되어 조용히 건너뜁니다.
+- **조용히 무시되는 이름** — 아래에 해당하는 파일은 정상 파일이어도 **절대 처리되지 않고 알림도 없습니다**. 직원에게 알려 주세요: `~$` 로 시작, `.` 으로 시작, `.tmp` `.part` `.partial` `.crdownload` `.swp` `.lnk` 로 끝남, `Thumbs.db` `desktop.ini`, `.처리결과.txt` 메모, 숨김/시스템 속성 파일. 파일 이름은 200자 이하, 폴더는 `inbox` 아래 6단계까지만 봅니다(더 깊으면 메모만 남기고 들어가지 않음).
+- **알려진 한계(미해결)**: (1) 연결 폴더 검사와 실제 읽기 사이의 짧은 틈(TOCTOU)이 남아 있습니다. 링크를 만들려면 Windows 권한(SeCreateSymbolicLink / 폴더 쓰기)이 필요하므로 NTFS 권한으로 완화합니다. (2) 폴더당 파일 수·큐 길이 상한이 아직 없습니다. 한 사람이 수천 개를 한꺼번에 넣으면 처리가 순차라서 다른 부서가 지연될 수 있습니다.
+
+**왜 "모두가 쓰는 폴더 하나"는 지원하지 않는가**: space가 곧 열람 권한(ACL)인데, 한 폴더에 모인 파일의 소유자(작성자)로 부서를 정하는 것은 신뢰할 수 없습니다(복사·이동·대리 저장 시 소유자가 바뀜). 내용이나 AI로 부서를 추측하면 다른 부서 문서가 노출될 수 있어 막아 두었습니다.
+
+**폴더 별칭(한글 폴더 이름)**: `WIKI_INBOX_ALIASES=C:\wiki\config\inbox-aliases.json` (파일 형식은 `config/env.example` [8]).
+```json
+{ "인사팀": "dept-hr", "인프라팀": "dept-a", "인프라팀/당직": "dept-a/part-1" }
+```
+- 폴더 경로에서 **가장 긴 별칭이 우선**이고, **별칭 폴더 아래 하위 폴더는 그 별칭의 space 를 그대로 물려받습니다**(최대 4단계). 하위 폴더를 다른 space 로 좁히려면 그 폴더의 별칭을 하나 더 추가하세요.
+  예: 위 파일이면 `인프라팀\2026\a.md` -> `dept-a`, `인프라팀\당직\b.md` -> `dept-a/part-1`, `인프라팀\당직\야간\c.md` -> `dept-a/part-1`. 하위 폴더 이름만으로 새 하위 space 가 생기지는 않습니다. 별칭이 없는 폴더도 정식 space 이름(`dept-a`)이면 그대로 동작하고, 나머지는 예전처럼 거부됩니다.
+- 한글 폴더 이름은 NFC/NFD(맥 등에서 자모가 분리되어 올 수 있음)와 대·소문자를 구분하지 않고 비교합니다(Windows 폴더가 대소문자를 구분하지 않으므로).
+- 파일에 문제가 하나라도 있으면 **파이프라인이 시작을 거부**합니다(잘못된 부서로 들어가는 것보다 낫습니다): 빈 키, `..`, `\`, `:`, `_`로 시작하는 단계, Windows 예약어(`con` 등), 끝의 점·공백, 대소문자/정규화만 다른 중복 키, 올바르지 않은 space 값, 64KiB 초과, 그리고 다른 부서의 정식 space 폴더(`dept-b` 등)를 다른 space 로 돌리는 키.
+- 이 때문에 `HR` 처럼 영문 소문자로 읽혀 정식 space 이름과 겹치는 키는 쓸 수 없습니다(Windows 는 `HR`/`hr` 을 같은 폴더로 보므로, 그 폴더에 쓸 수 있는 사람의 파일이 정식 부서 `hr` 이 아닌 다른 space 로 들어가는 것을 막기 위함). 한글이나 `인사-HR팀` 처럼 구분되는 이름을 쓰세요.
+- 파일은 이후 모든 곳(`raw/`, `wiki/`, `_done/_failed/_rejected`)에 **정식 space 이름** 기준으로 저장됩니다.
+
 ---
 
 ## 4. 자료 유형별 입력 요령

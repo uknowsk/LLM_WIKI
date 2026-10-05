@@ -19,13 +19,15 @@ from llmwiki.engine.embed import Embedder
 from llmwiki.engine.llm import LLMClient
 from llmwiki.engine.store import Store
 from llmwiki.ingest.docx import parse_docx
+from llmwiki.ingest.limits import max_input_bytes
 from llmwiki.ingest.xlsx import parse_xlsx
 from llmwiki.ingest.eml import parse_eml
 from llmwiki.ingest.pdf import OcrEngine, PdfExtractor, parse_pdf
 from llmwiki.ingest.save import save_raw
 from llmwiki.ingest.text import parse_text
 from llmwiki.models import ParsedDocument, RawRecord
-from llmwiki.pipeline import inbox
+from llmwiki.pipeline import inbox, notes
+from llmwiki.pipeline.aliases import AliasMap
 
 SYSTEM_USER = User(id="system:pipeline", name="pipeline", department="system")
 SUPPORTED = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf")
@@ -41,7 +43,7 @@ CREATE TABLE IF NOT EXISTS pipeline_sources (
 
 @dataclass
 class ProcessResult:
-    status: str  # done | skipped | rejected | failed
+    status: str  # done | skipped | rejected | failed | locked (in use or still growing: retried, not an attempt)
     path: Path
     space: str
     raw_paths: list[str] = field(default_factory=list)
@@ -51,7 +53,13 @@ class ProcessResult:
 
 
 class _Reject(Exception):
-    pass
+    def __init__(self, msg: str, category: str = notes.UNSUPPORTED):
+        super().__init__(msg)
+        self.category = category
+
+
+class _Unsafe(Exception):
+    """The path runs through a symlink/junction: never read, move or write next to it."""
 
 
 def mask_for_space(settings: Settings, space: str, policy: Mapping[str, bool] | None) -> bool:
@@ -147,8 +155,13 @@ def process_file(
     extractor: PdfExtractor | None = None,
     mask_policy: Mapping[str, bool] | None = None,
     embedder: Embedder | None = None,
+    aliases: AliasMap | None = None,
+    verify_folder: bool = False,
 ) -> ProcessResult:
-    """Ingest one file. Never raises for file-level problems; see ProcessResult.status."""
+    """Ingest one file. Never raises for file-level problems; see ProcessResult.status.
+
+    verify_folder=True (the central pipeline): the job's `space` is re-derived from the inbox folder (+ aliases) and a
+    mismatch is rejected without moving anything. Off for personal mode, where one fixed space covers all subfolders."""
     path = Path(path)
     result = ProcessResult("failed", path, space)
     db = _db(settings)
@@ -159,12 +172,35 @@ def process_file(
             label = f"{space}/{path.name}"
             if path.suffix.lower() not in SUPPORTED:
                 raise _Reject(f"unsupported file type: {path.suffix.lower() or '(none)'}")
-            data = path.read_bytes()
+            if inbox.has_link_component(settings, path):
+                raise _Unsafe("path goes through a symlink/junction")
+            if verify_folder:  # never trust the space of a queued job: re-derive it like the scanner does
+                try:
+                    derived = inbox.space_for_path(settings, path, aliases)
+                except inbox.InvalidSpace:
+                    raise _Unsafe("folder is not a valid space") from None
+                if derived is not None and derived != space:
+                    raise _Unsafe("job space does not match the folder")
+            before = path.stat()
+            if before.st_size > max_input_bytes():
+                raise _Reject(f"file too large (> {max_input_bytes()} bytes)", notes.TOO_LARGE)  # checked before reading
+            try:
+                data = path.read_bytes()
+            except PermissionError as exc:
+                if not inbox.is_sharing_violation(exc):
+                    raise  # access denied is a normal failed attempt (3 strikes -> _failed + note)
+                result.status, result.error = "locked", "file is in use"  # Office/copy still holds it: retried
+                return result
+            after = path.stat()
+            if (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns) or len(data) != before.st_size:
+                result.status, result.error = "locked", "file is still being written"
+                return result
             sha = hashlib.sha256(data).hexdigest()
             if _already_ingested(db, space, sha):
                 result.status = "skipped"
                 audit.record(SYSTEM_USER, "ingest_skip", label, f"duplicate sha256={sha[:12]}")
                 _archive(settings, path, space, mask_policy)
+                inbox.clear_notice(settings, path)
                 return result
             compiler = Compiler(settings, store, llm, embedder=embedder)
             if path.suffix.lower() == ".eml":
@@ -180,12 +216,19 @@ def process_file(
             result.status = "done"
             audit.record(SYSTEM_USER, "ingest", label, "raw=" + ",".join(result.raw_paths))
             _archive(settings, path, space, mask_policy)
+            inbox.clear_notice(settings, path)
+        except _Unsafe as exc:  # nothing is moved: the file may live in another department's folder
+            result.status, result.error = "rejected", str(exc)
+            audit.record(SYSTEM_USER, "ingest_reject", "(path check)", result.error)  # no names in the audit
         except (_Reject, inbox.InvalidSpace) as exc:
             result.status, result.error = "rejected", str(exc)
             audit.record(SYSTEM_USER, "ingest_reject", label, result.error)
             inbox.reject(settings, path, None if isinstance(exc, inbox.InvalidSpace) else space, result.error)
+            inbox.notify(settings, path, exc.category if isinstance(exc, _Reject) else notes.LOCATION)
         except Exception as exc:  # one bad file (parser, LLM JSON, I/O) must not stop the batch
-            result.status, result.error = "failed", f"{type(exc).__name__}: {exc}"
+            # exception text can echo document fragments: keep only the class name and the category
+            result.status = "failed"
+            result.error = f"{type(exc).__name__} ({notes.categorize_error(f'{type(exc).__name__}: {exc}')})"
             audit.record(SYSTEM_USER, "ingest_fail", label, result.error)
     finally:
         db.close()
@@ -221,6 +264,6 @@ def _process_eml(
             result.raw_paths.append(arec.raw_path)
             result.articles += [aart] if aart else []
         except Exception as exc:  # an attachment problem must not undo the already-compiled mail
-            msg = f"{name}: {exc}"
+            msg = f"{name}: {type(exc).__name__} ({notes.categorize_error(f'{type(exc).__name__}: {exc}')})"
             result.attachment_errors.append(msg)
             audit.record(SYSTEM_USER, "ingest_fail", f"{space}/{path.name}#{name}", msg)

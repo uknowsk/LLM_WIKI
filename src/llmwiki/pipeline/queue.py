@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from llmwiki.config import Settings
-from llmwiki.pipeline import inbox
+from llmwiki.pipeline import inbox, notes
 from llmwiki.pipeline.run import ProcessResult
 
 COMPILE_LOCK = threading.Lock()
@@ -42,12 +42,18 @@ class JobQueue:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(str(settings.db_path), timeout=30, check_same_thread=False)
         self._lock = threading.Lock()  # guards this connection; never held while compiling
+        self._given_up: dict[str, tuple[int, int]] = {}  # path -> (size, mtime_ns) of a file we gave up on but could not move
         self._db.execute(_SCHEMA)
         self._db.commit()
 
     def enqueue(self, path: Path, space: str) -> bool:
         """Add a job. No-op while a job for this path is pending or still retriable; returns True if (re)queued."""
         key, now = str(Path(path)), _now()
+        sig = self._sig(Path(path))
+        if key in self._given_up:
+            if sig == self._given_up[key]:
+                return False  # unchanged since we gave up (and could not move it away): do not start over forever
+            del self._given_up[key]
         with self._lock:
             row = self._db.execute("SELECT status, attempts FROM pipeline_jobs WHERE path = ?", (key,)).fetchone()
             if row is None:
@@ -64,6 +70,25 @@ class JobQueue:
                 )
             self._db.commit()
         return True
+
+    @staticmethod
+    def _sig(path: Path) -> tuple[int, int] | None:
+        try:
+            st = path.stat()
+            return st.st_size, st.st_mtime_ns
+        except OSError:
+            return None
+
+    def _remember_given_up(self, path: Path) -> None:
+        sig = self._sig(path)  # only matters if the file is still there (the move failed)
+        if sig is not None:
+            self._given_up[str(path)] = sig
+
+    def drop_pending(self) -> None:
+        """At startup: forget queued-but-unstarted jobs; the next scan re-derives path and space from the folder."""
+        with self._lock:
+            self._db.execute("DELETE FROM pipeline_jobs WHERE status = 'new'")
+            self._db.commit()
 
     def jobs(self, status: str | None = None) -> list[dict]:
         with self._lock:
@@ -104,14 +129,30 @@ class JobQueue:
                 results.append(res)
                 if res.status in ("done", "skipped"):
                     self._finish(key, "done", attempts + 1, "; ".join(res.attachment_errors))
+                elif res.status == "locked":  # in use / still growing: not a failed attempt, retried next scan
+                    self._finish(key, "new", attempts, "in use or still being written; will retry")
                 elif res.status == "rejected":  # terminal, never retried (process_file already moved the file)
                     self._finish(key, "failed", self.max_attempts, res.error)
+                    self._remember_given_up(path)
                 else:
                     attempts += 1
                     self._finish(key, "failed", attempts, res.error)
                     if attempts >= self.max_attempts:
                         inbox.mark_failed(self.settings, path, space, res.error)
+                        inbox.notify(self.settings, path, notes.categorize_error(res.error))
+                        self._remember_given_up(path)
         return results
+
+    def give_up(self, path: Path, space: str, reason: str, category: str) -> None:
+        """Finalize a file that stayed locked/unreadable too long: _failed + note, job marked exhausted."""
+        key = str(Path(path))
+        with self._lock:
+            row = self._db.execute("SELECT 1 FROM pipeline_jobs WHERE path = ?", (key,)).fetchone()
+        if row:
+            self._finish(key, "failed", self.max_attempts, reason)
+        inbox.mark_failed(self.settings, Path(path), space, reason)
+        inbox.notify(self.settings, Path(path), category)
+        self._remember_given_up(Path(path))
 
     def drain(self, process: Callable[[Path, str], ProcessResult]) -> list[ProcessResult]:
         """Run until nothing runnable is left (used by --once): includes the retries."""

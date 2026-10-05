@@ -8,7 +8,7 @@ from collections.abc import Mapping
 
 from ..config import load_settings
 from . import report
-from .checks_gaps import check_ocr_command, check_pii_policy
+from .checks_gaps import check_inbox_aliases, check_inbox_layout, check_ocr_command, check_pii_policy
 from .checks_llm import build_llm, check_chat, check_embed, check_stream
 from .checks_self import check_acl, check_ingest
 from .checks_sys import check_auth, check_data, check_env, check_ocr, check_python, check_web
@@ -32,6 +32,8 @@ def run_checks(environ: Mapping[str, str], probe_context: bool = False, skip_llm
     results += check_ocr(environ)
     results += check_ocr_command(environ, probe_ocr)
     results += check_pii_policy(environ)
+    results += check_inbox_aliases(environ, settings)
+    results += check_inbox_layout(settings, environ)
     client, res = build_llm(settings, environ)
     results += res
     if client is not None:
