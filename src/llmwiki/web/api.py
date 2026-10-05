@@ -5,6 +5,7 @@ import logging
 
 from ..engine import article as art
 from ..engine.llm import LLMError
+from ..engine.params import RetrievalParams
 from ..engine.query import AccessDenied, QueryService
 from .http import HttpError, Request, json_response
 from .render import render_markdown
@@ -31,12 +32,18 @@ def me(app, req: Request, session):
     return json_response(200, body)
 
 
+def query_service(app) -> QueryService:
+    # without explicit params QueryService falls back to the legacy k=5; use the tuned defaults (env-overridable)
+    return QueryService(app.settings, app.store, app.llm, app.audit, embedder=app.embedder,
+                        params=RetrievalParams.from_env())
+
+
 def query(app, req: Request, session):
     body = req.read_json(app.cfg.max_json_bytes)
     q = body.get("question")
     if not isinstance(q, str) or not q.strip() or len(q) > MAX_QUESTION:
         raise HttpError(400, "bad_question")
-    service = QueryService(app.settings, app.store, app.llm, app.audit, embedder=app.embedder)
+    service = query_service(app)
     try:
         res = service.query(session.user, q.strip())
     except LLMError as exc:

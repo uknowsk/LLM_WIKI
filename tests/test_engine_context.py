@@ -29,6 +29,32 @@ def test_budget_env_parsing(monkeypatch):
     assert context_char_budget(4096) == int((4096 - 1500) * 0.9)
 
 
+def test_params_from_env(monkeypatch):
+    monkeypatch.delenv("WIKI_TOP_K", raising=False)
+    monkeypatch.delenv("WIKI_MAX_CONTEXT_CHARS", raising=False)
+    assert RetrievalParams.from_env() == RetrievalParams()  # the tuned defaults, not the legacy k=5
+    monkeypatch.setenv("WIKI_TOP_K", "3")
+    monkeypatch.setenv("WIKI_MAX_CONTEXT_CHARS", "2000")
+    p = RetrievalParams.from_env()
+    assert (p.top_k, p.max_context_chars) == (3, 2000)
+    for bad in ("abc", "", "0", "-2", "1.5"):  # invalid -> default (top_k must be >= 1)
+        monkeypatch.setenv("WIKI_TOP_K", bad)
+        monkeypatch.setenv("WIKI_MAX_CONTEXT_CHARS", bad)
+        p = RetrievalParams.from_env()
+        assert p.top_k == RetrievalParams().top_k
+        assert p.max_context_chars == (0 if bad == "0" else RetrievalParams().max_context_chars)
+
+
+def test_web_query_uses_env_params(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from llmwiki.web.api import query_service
+    monkeypatch.setenv("WIKI_TOP_K", "1")
+    env = make_env(tmp_path)
+    app = SimpleNamespace(settings=env.settings, store=env.store, llm=FakeLLM(), audit=env.audit, embedder=None)
+    assert query_service(app).params.top_k == 1
+
+
 def test_pack_order_truncation_and_drop():
     docs = {"a.md": "A" * 1000, "b.md": "B" * 1000, "c.md": "C" * 1000}
     inc, ctx, tr = pack_context(docs, 10_000, None)

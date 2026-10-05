@@ -7,6 +7,14 @@ from dataclasses import dataclass
 MODES = ("bm25", "dense", "hybrid")
 
 
+def _env_int(name: str, default: int, minimum: int) -> int:
+    try:
+        v = int((os.environ.get(name) or "").strip())
+    except ValueError:
+        return default
+    return v if v >= minimum else default
+
+
 @dataclass(frozen=True)
 class RetrievalParams:
     # Retrieval defaults chosen on the 100-question synthetic set with LM Studio bge-m3 (docs/RAG-TUNING-REPORT.md):
@@ -30,6 +38,13 @@ class RetrievalParams:
             raise ValueError(f"retrieval_mode must be one of {MODES}")
         if self.top_k < 1 or self.candidate_pool < 1 or self.rrf_k < 0 or self.max_context_chars < 0:
             raise ValueError("top_k/candidate_pool must be >= 1; rrf_k/max_context_chars >= 0")
+
+    @classmethod
+    def from_env(cls) -> "RetrievalParams":
+        """Defaults, with WIKI_TOP_K (>= 1) and WIKI_MAX_CONTEXT_CHARS (>= 0) overriding; invalid values are ignored."""
+        d = cls()
+        return cls(top_k=_env_int("WIKI_TOP_K", d.top_k, 1),
+                   max_context_chars=_env_int("WIKI_MAX_CONTEXT_CHARS", d.max_context_chars, 0))
 
 
 @dataclass(frozen=True)
