@@ -10,8 +10,9 @@
 
 ## (a) 완료된 것 / 검증된 것
 
-작성자 PC(Windows 11, Python 3.14.6)에서 마지막으로 실행한 결과: `pytest -q` **500 passed, 1 skipped**
-(skip 1건은 waitress 가 설치되지 않아 건너뛴 실서버 테스트). 이 수치는 "작성자 PC 의 마지막 실행 기준"이며 사내에서 재실행해 확인해야 한다.
+작성자 PC(Windows 11, Python 3.14.6)에서 마지막으로 실행한 결과: `pytest -q` **875 passed, 2 skipped**
+(skip 은 waitress 가 설치되지 않아 건너뛴 실서버 테스트 등). 이후 추가된 기능: 공용 폴더 수집(b-9), 개인 모드(`docs/PERSONAL-MODE.md`),
+웹 질의가 튜닝 기본값(top_k 8)을 쓰도록 수정 + `WIKI_TOP_K`/`WIKI_MAX_CONTEXT_CHARS` 환경변수. 이 수치는 "작성자 PC 의 마지막 실행 기준"이며 사내에서 재실행해 확인해야 한다.
 
 | 영역 | 상태 | 비고 |
 |---|---|---|
@@ -45,7 +46,7 @@ waitress 실가동, 리버스 프록시/TLS 뒤 동작, Windows 서비스(작업
    `python -m llmwiki.pipeline` 은 `pypdf` 가 import 되면 `PypdfExtractor` 를 자동 주입하고, `WIKI_OCR_COMMAND` 가 있으면 OCR 엔진도 주입한다(b-5).
    `pypdf` 가 없으면 PDF 파일만 파일 단위로 실패한다(`pypdf is not installed`).
 5. `copy config\env.example .env` 후 편집 (프로필 A: 사내). 비밀은 `*_FILE` 로. `.env` 는 커밋 금지(.gitignore 에 있음).
-6. 테스트: `scripts\run-tests.ps1` -> 500 passed / 1 skipped 에 가까워야 한다. waitress 설치 후에는 skip 이 0 이 된다.
+6. 테스트: `scripts\run-tests.ps1` -> 875 passed / 2 skipped 에 가까워야 한다(작성자 PC 기준). waitress 설치 후에는 skip 이 줄어든다.
 
 ### b-2. LM Studio 모델 (같은 PC, 임베딩용)
 - **필수**: `bge-m3` (모델 id `text-embedding-bge-m3`). 선택: gemma 계열(집에서 채팅 대체용으로 쓴 것; 사내 채팅은 Gauss).
@@ -124,6 +125,7 @@ WIKI_EMBED_MODEL=text-embedding-bge-m3
   - 종료 코드 != 0, 타임아웃(`WIKI_OCR_TIMEOUT` 기본 120초), 출력 상한(`WIKI_OCR_MAX_OUTPUT` 기본 8 MiB), 비 UTF-8 출력 -> 예외(파일 `failed`로 기록). stderr 내용은 기록/반환하지 않고 바이트 수만 남긴다.
   - doctor: `ocr.command`(구성 여부), `python -m llmwiki.doctor --probe-ocr` 는 1x1 PNG(image 모드) 또는 빈 1페이지 PDF(pdf 모드)로 자가 테스트(기본은 실행하지 않음).
   - 설정 오류(없는 실행 파일, 잘못된 ARGS/숫자)는 파이프라인 **시작을 거부**한다(종료 코드 2).
+- **Doxa API 로 PDF OCR 이 가능하다는 사용자 정보가 있다**(사양은 이 저장소에 없음, 미연결). 같은 계약의 래퍼 스크립트로 붙이는 방법과 먼저 확인할 질문은 `ONSITE-START.md` S5.
 - 조사 결과 권장은 **PaddleOCR 을 별도 Python 3.12 프로세스**로 실행(3.14 에서 의존성 설치가 어려울 수 있음)하는 것이나 **미검증**이다.
   구조 제안: `OcrEngine` 구현체가 하위 프로세스(`WIKI_OCR_PYTHON` 으로 지정한 3.12 인터프리터의 워커 스크립트)에 PDF 바이트/페이지 번호를 stdin 으로 넘기고 텍스트를 stdout 으로 받는다.
   타임아웃, 출력 크기 상한, 오류 시 빈 문자열이 아닌 예외(그래야 파이프라인이 실패로 기록)를 지킨다. 문서 내용을 로그에 남기지 않는다.
@@ -212,7 +214,8 @@ WIKI_EMBED_MODEL=text-embedding-bge-m3
    (`--results` 를 저장소 밖으로 주는 것을 권장. 기본값 `eval/results` 에는 LLM 응답 캐시가 쌓인다.) 종료 코드 3 = **누수 감지**.
 4. 합격 기준: **leak = 0 (하드 실패, 하나라도 있으면 해당 설정 폐기)**, refusal_accuracy(`unanswerable`/`cross_space`), citation_accuracy, fact_recall, correct. 기준 수치는 사용자와 합의(기획 Phase 2).
    tune 점수와 heldout 점수의 gap 이 크면 과적합이다.
-5. 결과를 환경에 반영: 채택한 `RetrievalParams` 값은 현재 **코드 기본값(`engine/params.py`)** 으로만 존재하고 환경변수/설정 파일 로드가 없다 -> 채택 시 `params.py` 기본값 수정 또는 로딩 방법 추가(결정 로그에 기록).
+5. 결과를 환경에 반영: 웹 질의의 `top_k` 와 문서당 글자 상한은 `WIKI_TOP_K`(기본 8)/`WIKI_MAX_CONTEXT_CHARS`(기본 0)로 바꿀 수 있다(`RetrievalParams.from_env`).
+   나머지 검색 파라미터(rrf_k, 가중치, BM25 등)는 아직 코드 기본값(`engine/params.py`)뿐이므로 채택 시 기본값 수정 또는 환경변수 추가(결정 로그에 기록).
 6. Gauss 호출량: tune/generation 은 수백 번 호출한다. 사내 사용량/요금/속도 제한을 확인하고, `eval` 의 LLM 응답 캐시(`llm_cache.sqlite`)를 활용(같은 입력은 재호출 안 함).
 
 ---
@@ -278,7 +281,7 @@ SAML/OCR/기능 추가 후에는 반드시 전체 테스트 + 누수 테스트�
    와 `export --since ISO --out file.jsonl` 사용. 웹의 감사 조회 API 는 읽기 전용 그대로.
 8. (해결됨, 아래 f-A) 프록시 뒤 로그인 속도제한: `WIKI_TRUSTED_PROXIES`.
 9. 단일 프로세스 가정: 세션/속도제한/검색 캐시가 프로세스 메모리 또는 SQLite. 웹을 여러 프로세스로 늘리는 것은 검증되지 않았다(컴파일 락 `COMPILE_LOCK` 도 프로세스 내부 락; 웹과 파이프라인은 별도 프로세스로 같은 SQLite 를 WAL 로 공유).
-10. RetrievalParams 채택값을 환경/설정에서 읽는 경로 없음(c-5).
+10. (일부 해결) `top_k`/`max_context_chars` 만 환경변수로 읽는다. 나머지 RetrievalParams 는 코드 기본값(c-5).
 11. (해결됨) `eval/results/*.sqlite` 는 .gitignore 에 추가됨.
 12. (해결됨, f-A) 파이프라인 CLI 의 PDF 추출기/OCR 주입.
 13. **SAML 제공자는 현장에서 작성**: ACS 핸들러는 `add_route(..., self_validated=True)` + `Request.read_form()` 사용(DEV-GUIDE 4-3). 서명/InResponseTo/시간 창/재생 검증은 핸들러 책임.
