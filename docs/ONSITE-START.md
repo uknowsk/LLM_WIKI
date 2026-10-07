@@ -22,7 +22,7 @@
 | Python 확인 | `python --version` | 3.14 권장(3.14 만 검증됨, 3.11~3.13 미검증) |
 | 가상환경 | `scripts\setup-venv.ps1 -IndexUrl <사내 pip 미러> -TrustedHost <호스트>` (미러 주소는 사람에게 묻는다) | `.venv` 생성, 설치 성공. 코어는 런타임 의존성 0 |
 | 선택 의존성 | `-ExtraPackages pypdf` (PDF), waitress 는 `[prod]` | |
-| 전체 테스트 | `scripts\run-tests.ps1` | 작성자 PC 기준 **875 passed, 2 skipped**(skip 은 waitress 미설치 등). 사내 수치를 기록 |
+| 전체 테스트 | `scripts\run-tests.ps1` | 작성자 PC 기준 **944 passed, 2 skipped**(skip 은 waitress 미설치 등). 사내 수치를 기록 |
 | 오프라인 진단 | `scripts\run-doctor.ps1 -SkipLlm -SkipEmbed` | FAIL 0 (WARN 은 미설정 항목) |
 
 테스트가 사내 환경 때문에 실패하면(경로, 권한, 인코딩) 원인을 분류해 고치되 **테스트를 약화/삭제하지 않는다.**
