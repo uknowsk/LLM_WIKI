@@ -76,6 +76,21 @@ def query(app, req: Request, session):
     return json_response(200, {"answer": res.answer, "citations": cites})
 
 
+RECENT_DEFAULT, RECENT_MAX = 20, 50
+
+
+def recent(app, req: Request, session):
+    """What changed lately among the articles this user may read: path, title and date only (never text)."""
+    try:
+        limit = int(req.query.get("limit", ""))
+    except ValueError:
+        limit = RECENT_DEFAULT
+    if not 1 <= limit <= RECENT_MAX:
+        limit = RECENT_DEFAULT
+    rows = query_service(app).recent(session.user, limit)
+    return json_response(200, {"items": [{"path": p, "title": t, "updated": u} for p, t, u in rows]})
+
+
 def article(app, req: Request, session):
     path = req.query.get("path", "")
     service = QueryService(app.settings, app.store, app.llm, app.audit)

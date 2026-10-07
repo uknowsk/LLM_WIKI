@@ -159,6 +159,13 @@ class Store:
         rows = self._q("SELECT title FROM articles WHERE path = ?", (path,))
         return rows[0][0] if rows else None
 
+    def article_meta(self, paths: Iterable[str], limit: int) -> list[tuple[str, str, str]]:
+        """(path, title, updated) of the given paths, most recently updated first. Metadata only, no ACL decision here:
+        callers must pass paths that already went through readable_articles."""
+        return [tuple(r) for r in self._q(
+            "SELECT path, title, updated FROM articles WHERE path IN (SELECT value FROM json_each(?)) "
+            "ORDER BY updated DESC, path LIMIT ?", (json.dumps(sorted(set(paths))), limit))]
+
     def article_paths(self) -> list[str]:
         return [r[0] for r in self._q("SELECT path FROM articles ORDER BY path")]
 

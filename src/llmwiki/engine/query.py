@@ -138,6 +138,10 @@ class QueryService:
         # computed only from articles this user was already allowed to read (docs), so it adds no exposure
         return QueryResult(answer, cited, [p for p in cited if is_disputed(docs[p])])
 
+    def recent(self, user: User, limit: int) -> list[tuple[str, str, str]]:
+        """(path, title, updated) of the user's readable articles, newest first. Same single ACL query as search."""
+        return self.store.article_meta(self.store.readable_articles(user.spaces), limit)
+
     def can_open(self, user: User, path: str) -> bool:
         """True only for an existing article the user may read (same ACL rule as read_article; no file access, no audit)."""
         try:

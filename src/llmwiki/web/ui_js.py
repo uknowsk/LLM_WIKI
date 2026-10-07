@@ -220,6 +220,21 @@ APP_JS = r"""
       h('button', { 'class': 'primary', text: '업로드', on: { click: send } }), msg);
   }
 
+  function recentView() {
+    var list = h('div', {});
+    api('GET', '/api/recent').then(function (r) {
+      if (!r.ok) { list.appendChild(h('p', { 'class': 'error', text: errText(r.data) })); return; }
+      var items = r.data.items || [];
+      if (!items.length) { list.appendChild(h('p', { 'class': 'muted', text: '아직 볼 수 있는 문서가 없습니다.' })); return; }
+      items.forEach(function (it) {
+        list.appendChild(h('p', {}, h('button', { text: it.title, on: { click: function () { openArticle(it.path); } } }),
+          h('span', { 'class': 'muted', text: '  ' + it.updated })));
+      });
+    });
+    return h('section', {}, h('h2', { text: '새 소식' }),
+      h('p', { 'class': 'muted', text: '내가 볼 수 있는 문서 중 최근에 바뀐 순서입니다.' }), list);
+  }
+
   function captureView() {
     var sel = h('select', {});
     state.me.spaces.forEach(function (s) { sel.appendChild(h('option', { value: s, text: s })); });
@@ -252,8 +267,8 @@ APP_JS = r"""
       h('span', {}, statusLine, personal ? null : state.me.name + ' (' + state.me.department + ')',
         personal ? null : h('button', { text: '로그아웃', on: { click: function () {
           api('POST', '/logout').then(function () { state.me = null; state.csrf = null; state.history = []; render(); }); } } }))));
-    var views = { ask: askView, doc: docView, memo: captureView, up: uploadView, set: settingsView };
-    var tabs = [['ask', '질문'], ['doc', '문서'], ['memo', '메모'], ['up', '업로드']];
+    var views = { ask: askView, doc: docView, news: recentView, memo: captureView, up: uploadView, set: settingsView };
+    var tabs = [['ask', '질문'], ['doc', '문서'], ['news', '새 소식'], ['memo', '메모'], ['up', '업로드']];
     if (personal) tabs.push(['set', '설정']);
     var nav = h('nav', {});
     tabs.forEach(function (t) {
