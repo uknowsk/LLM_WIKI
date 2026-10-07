@@ -128,6 +128,13 @@ class QueryService:
         # computed only from articles this user was already allowed to read (docs), so it adds no exposure
         return QueryResult(answer, cited, [p for p in cited if is_disputed(docs[p])])
 
+    def can_open(self, user: User, path: str) -> bool:
+        """True only for an existing article the user may read (same ACL rule as read_article; no file access, no audit)."""
+        try:
+            return isinstance(path, str) and path in self.store.article_paths() and can_read(user, self.store.article_spaces(path))
+        except (OSError, ValueError):
+            return False
+
     def read_article(self, user: User, path: str) -> str:
         """Server-side re-check for citation clicks. Same error for denied and missing."""
         ok, f = False, None

@@ -131,6 +131,21 @@ APP_JS = r"""
     return box;
   }
 
+  function feedbackBar(paths) {
+    var note = h('span', { 'class': 'muted' });
+    var bar = h('p', {}, h('span', { 'class': 'muted', text: '도움이 됐나요? ' }));
+    function vote(rating) {
+      api('POST', '/api/feedback', { json: { rating: rating, paths: paths } }).then(function (r) {
+        if (!r.ok) { note.className = 'error'; note.textContent = errText(r.data); return; }
+        clear(bar); bar.appendChild(h('span', { 'class': 'muted', text: '의견을 남겼습니다. 고맙습니다.' }));
+      });
+    }
+    bar.appendChild(h('button', { text: '👍 도움됨', on: { click: function () { vote('up'); } } }));
+    bar.appendChild(h('button', { text: '👎 틀림/부족', on: { click: function () { vote('down'); } } }));
+    bar.appendChild(note);
+    return bar;
+  }
+
   function askView() {
     askNote = h('p', { 'class': 'muted', text: noteText() });
     var q = h('textarea', { rows: '3', maxlength: '2000', placeholder: '질문을 입력하세요' });
@@ -152,6 +167,7 @@ APP_JS = r"""
         });
         out.appendChild(cites);
         if (anyDisputed) out.appendChild(h('p', { 'class': 'muted', text: '⚠ 표시된 문서는 출처끼리 내용이 다릅니다. 문서의 상충(Disputed) 절을 확인하세요.' }));
+        out.appendChild(feedbackBar((r.data.citations || []).map(function (c) { return c.path; })));
       });
     }
     return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), askNote, out);
