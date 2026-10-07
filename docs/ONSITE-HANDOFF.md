@@ -130,7 +130,7 @@ WIKI_EMBED_MODEL=text-embedding-bge-m3
   구조 제안: `OcrEngine` 구현체가 하위 프로세스(`WIKI_OCR_PYTHON` 으로 지정한 3.12 인터프리터의 워커 스크립트)에 PDF 바이트/페이지 번호를 stdin 으로 넘기고 텍스트를 stdout 으로 받는다.
   타임아웃, 출력 크기 상한, 오류 시 빈 문자열이 아닌 예외(그래야 파이프라인이 실패로 기록)를 지킨다. 문서 내용을 로그에 남기지 않는다.
 - 연결 위치: `pipeline/__main__.py` 가 `ocr_from_env()` 와 `PypdfExtractor` 를 `process_file` 에 넘긴다(위). 실제 PaddleOCR 래퍼는 현장에서 작성/검증(미검증).
-- OCR 오인식 가능성: 원본 이미지/PDF 링크 유지(기획 Q4). 이미지 파일(png/jpg) 직접 인제스트는 현재 SUPPORTED 에 없음(`.eml .md .txt .docx .xlsx .pdf`).
+- OCR 오인식 가능성: 원본 이미지/PDF 링크 유지(기획 Q4). 이미지 파일(png/jpg/jpeg) 직접 인제스트는 지원한다(`parse_image`, 위 OCR 엔진 필요, 없으면 파일 단위 실패 `UNREADABLE`, 글자가 없으면 빈 문서 대신 실패). 메일 안의 이미지(서명 로고 등)는 일부러 처리하지 않는다. 지원 형식: `.eml .md .txt .docx .xlsx .pdf .png .jpg .jpeg`. [검증: 가짜 OCR 엔진 자동 테스트 / 실제 OCR 엔진은 미검증]
 - HWP/HWPX 는 미정(미구현).
 
 ### b-6. 운영 서빙 (waitress + TLS 리버스 프록시)

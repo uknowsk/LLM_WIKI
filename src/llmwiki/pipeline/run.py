@@ -22,6 +22,7 @@ from llmwiki.ingest.docx import parse_docx
 from llmwiki.ingest.limits import max_input_bytes
 from llmwiki.ingest.xlsx import parse_xlsx
 from llmwiki.ingest.eml import parse_eml
+from llmwiki.ingest.image import IMAGE_EXTS, parse_image
 from llmwiki.ingest.pdf import OcrEngine, PdfExtractor, parse_pdf
 from llmwiki.ingest.save import save_raw
 from llmwiki.ingest.text import parse_text
@@ -30,8 +31,9 @@ from llmwiki.pipeline import inbox, notes
 from llmwiki.pipeline.aliases import AliasMap
 
 SYSTEM_USER = User(id="system:pipeline", name="pipeline", department="system")
-SUPPORTED = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf")
-ATTACHMENT_SUPPORTED = tuple(e for e in SUPPORTED if e != ".eml")  # no nested mails
+SUPPORTED = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf", *IMAGE_EXTS)
+# no nested mails, and no images inside mails (signature logos/banners would each cost an OCR call or an error)
+ATTACHMENT_SUPPORTED = tuple(e for e in SUPPORTED if e != ".eml" and e not in IMAGE_EXTS)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS pipeline_sources (
@@ -101,6 +103,8 @@ def _parse(data: bytes, name: str, ocr: OcrEngine | None, extractor: PdfExtracto
         return parse_xlsx(data, name)
     if ext == ".pdf":
         return parse_pdf(data, name, extractor=extractor, ocr=ocr)
+    if ext in IMAGE_EXTS:
+        return parse_image(data, name, ocr=ocr)
     raise _Reject(f"unsupported file type: {ext or '(none)'}")
 
 

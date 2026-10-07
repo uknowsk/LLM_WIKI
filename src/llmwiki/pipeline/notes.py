@@ -24,7 +24,7 @@ LINKED = "바로가기/연결 폴더 사용 불가"
 NO_ACCESS = "파일을 읽을 권한이 없거나 다른 프로그램이 계속 사용 중입니다"
 
 _ACTION = {
-    UNSUPPORTED: "docx / xlsx / pdf / eml / md / txt 중 하나로 저장해서 다시 넣어 주세요.",
+    UNSUPPORTED: "docx / xlsx / pdf / eml / md / txt / png / jpg 중 하나로 저장해서 다시 넣어 주세요.",
     CORRUPT: "파일을 다시 저장(암호 해제 포함)한 뒤 같은 폴더에 다시 넣어 주세요.",
     UNREADABLE: "다른 프로그램에서 열려 있지 않은지 확인하고 다시 넣어 주세요. 스캔 PDF 는 관리자에게 문의하세요.",
     FAILED: "같은 이름으로 한 번 더 넣어 보고, 계속 안 되면 관리자에게 문의하세요.",

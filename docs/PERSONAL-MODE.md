@@ -27,7 +27,7 @@
 데이터 위치: `%LOCALAPPDATA%\LLMWiki` (`WIKI_PERSONAL_HOME` 으로 변경). 이 밖에는 쓰지 않는다(감시 폴더는 읽기만).
 - `inbox\` — 여기에 파일을 넣으면 처리된다(하위 폴더도 됨, 모두 공간 `personal`). 성공하면 `inbox\_done\personal\`, 실패는 `_failed`, 지원하지 않는 형식은 `_rejected` 로 이동한다. 브라우저 '업로드' 탭도 같은 곳에 저장한다.
 - `wiki\` — 옵시디언 호환 마크다운 위키. 옵시디언에서 이 폴더를 보관소로 열면 된다. `raw\` 는 정규화된 원문 사본, `wiki.db` 는 색인/감사 기록.
-- 지원 형식: `.md .txt .docx .xlsx .eml .pdf` (스캔 PDF 는 OCR 설정 없으면 실패).
+- 지원 형식: `.md .txt .docx .xlsx .eml .pdf .png .jpg .jpeg` (스캔 PDF 와 이미지는 OCR 설정(`WIKI_OCR_COMMAND`) 없으면 실패).
 - **감시 폴더(선택)**: `WIKI_PERSONAL_WATCH=C:\Users\me\Documents\회의록;D:\문서` 또는 `<home>\settings.json` 의 `{"watch": ["C:\\..."]}`.
   - 하위 폴더까지 주기적으로(약 1분) 훑어 **새 파일/바뀐 파일만 복사**해서 처리한다. 원본은 읽기만 하고 **이동·이름 변경·수정·삭제를 하지 않는다**(마스킹을 켜도 동일). [검증]
   - 무시: `~$*`, `Thumbs.db`, `desktop.ini`, `*.tmp`, 숨김/시스템 속성 파일, 바로가기/심볼릭 링크/정션(따라가지 않음), 크기 상한(기본 50MB) 초과, 데이터 폴더 안의 모든 것.

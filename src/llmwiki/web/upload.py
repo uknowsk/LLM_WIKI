@@ -10,10 +10,11 @@ import secrets
 import unicodedata
 from pathlib import Path
 
+from ..ingest.image import IMAGE_EXTS, is_image
 from ..pipeline.inbox import InvalidSpace, inbox_dir, is_temp_name, validate_space
 from .http import HttpError, Request, Response, json_response
 
-ALLOWED_EXT = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf")
+ALLOWED_EXT = (".eml", ".md", ".txt", ".docx", ".xlsx", ".pdf", *IMAGE_EXTS)
 _RESERVED = frozenset({"con", "prn", "aux", "nul", *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))})
 _SAFE_PUNCT = frozenset(" ._-()[]")
 _CHUNK = 64 * 1024
@@ -55,6 +56,8 @@ def _magic_ok(ext: str, head: bytes) -> bool:
         return b"%PDF-" in head[:1024]
     if ext in (".docx", ".xlsx"):
         return head[:2] == b"PK"
+    if ext in IMAGE_EXTS:
+        return is_image(head)
     return True
 
 

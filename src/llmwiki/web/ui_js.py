@@ -44,7 +44,7 @@ APP_JS = r"""
   }
   var ERR = { unauthorized: '로그인이 필요합니다.', invalid_credentials: '로그인에 실패했습니다.', forbidden: '권한이 없습니다.',
     not_found: '문서를 찾을 수 없습니다.', csrf: '요청이 거부되었습니다. 새로고침 후 다시 시도하세요.', too_large: '파일이 너무 큽니다.',
-    bad_extension: '허용되지 않는 파일 형식입니다 (.eml .md .txt .docx .xlsx .pdf).', bad_filename: '파일 이름이 올바르지 않습니다.',
+    bad_extension: '허용되지 않는 파일 형식입니다 (.eml .md .txt .docx .xlsx .pdf .png .jpg).', bad_filename: '파일 이름이 올바르지 않습니다.',
     llm_unavailable: '답변 서버에 연결할 수 없습니다.', llm_busy: '문서 처리 중이라 답변이 지연됩니다. 잠시 후 다시 시도하세요.', bad_content: '파일 내용이 형식과 일치하지 않습니다.',
     bad_url: 'URL 은 http 또는 https 주소 한 줄이어야 합니다.', empty_text: '메모 내용을 입력하세요.', bad_space: '공간이 올바르지 않습니다.' };
   function errText(d) { return (d && ERR[d.error]) || '오류가 발생했습니다.'; }
@@ -200,7 +200,7 @@ APP_JS = r"""
     var sel = h('select', {});
     state.me.spaces.forEach(function (s) { sel.appendChild(h('option', { value: s, text: s })); });
     var single = state.me.spaces.length === 1;  // one space: no choice to make, use it automatically
-    var file = h('input', { type: 'file', accept: '.eml,.md,.txt,.docx,.xlsx,.pdf' });
+    var file = h('input', { type: 'file', accept: '.eml,.md,.txt,.docx,.xlsx,.pdf,.png,.jpg,.jpeg' });
     var msg = h('p', {});
     function send() {
       var f = file.files[0];
