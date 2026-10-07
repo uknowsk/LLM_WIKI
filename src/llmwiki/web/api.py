@@ -38,14 +38,35 @@ def query_service(app) -> QueryService:
                         params=RetrievalParams.from_env())
 
 
+MAX_TURNS, MAX_HIST_Q, MAX_HIST_A = 3, 1000, 2000
+
+
+def _history(raw) -> list[tuple[str, str]] | None:
+    """Earlier turns sent by the browser (never stored server-side). Strictly validated; they are prompt text only."""
+    if raw is None:
+        return None
+    bad = HttpError(400, "bad_history")
+    if not isinstance(raw, list) or len(raw) > MAX_TURNS:
+        raise bad
+    out = []
+    for t in raw:
+        if not isinstance(t, dict) or not isinstance(t.get("q"), str) or not isinstance(t.get("a"), str):
+            raise bad
+        if len(t["q"]) > MAX_HIST_Q or len(t["a"]) > MAX_HIST_A:
+            raise bad
+        out.append((t["q"], t["a"]))
+    return out or None
+
+
 def query(app, req: Request, session):
     body = req.read_json(app.cfg.max_json_bytes)
     q = body.get("question")
     if not isinstance(q, str) or not q.strip() or len(q) > MAX_QUESTION:
         raise HttpError(400, "bad_question")
+    history = _history(body.get("history"))
     service = query_service(app)
     try:
-        res = service.query(session.user, q.strip())
+        res = service.query(session.user, q.strip(), history=history)
     except LLMError as exc:
         if getattr(exc, "busy", False):  # personal mode: waited too long behind document processing
             raise HttpError(503, "llm_busy") from None

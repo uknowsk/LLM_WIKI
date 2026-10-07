@@ -5,7 +5,7 @@ APP_JS = r"""
 (function () {
   'use strict';
   var root = document.getElementById('app');
-  var state = { me: null, csrf: null, tab: 'ask', wasPersonal: false, pst: null };
+  var state = { me: null, csrf: null, tab: 'ask', wasPersonal: false, pst: null, history: [] };
   var statusLine = null, askNote = null;
 
   function h(tag, attrs) {
@@ -36,7 +36,7 @@ APP_JS = r"""
       return r.json().catch(function () { return {}; }).then(function (data) {
         if (r.status === 401 && url !== '/login') {
           state.wasPersonal = !!(state.me && state.me.personal) || state.wasPersonal;
-          state.me = null; state.csrf = null; render();
+          state.me = null; state.csrf = null; state.history = []; render();
         }
         return { status: r.status, ok: r.ok, data: data };
       });
@@ -46,7 +46,7 @@ APP_JS = r"""
     not_found: '문서를 찾을 수 없습니다.', csrf: '요청이 거부되었습니다. 새로고침 후 다시 시도하세요.', too_large: '파일이 너무 큽니다.',
     bad_extension: '허용되지 않는 파일 형식입니다 (.eml .md .txt .docx .xlsx .pdf .png .jpg).', bad_filename: '파일 이름이 올바르지 않습니다.',
     llm_unavailable: '답변 서버에 연결할 수 없습니다.', llm_busy: '문서 처리 중이라 답변이 지연됩니다. 잠시 후 다시 시도하세요.', bad_content: '파일 내용이 형식과 일치하지 않습니다.',
-    bad_url: 'URL 은 http 또는 https 주소 한 줄이어야 합니다.', empty_text: '메모 내용을 입력하세요.', bad_space: '공간이 올바르지 않습니다.' };
+    bad_url: 'URL 은 http 또는 https 주소 한 줄이어야 합니다.', empty_text: '메모 내용을 입력하세요.', bad_history: '이전 대화가 너무 길어 처음부터 다시 질문해 주세요(새 대화).', bad_space: '공간이 올바르지 않습니다.' };
   function errText(d) { return (d && ERR[d.error]) || '오류가 발생했습니다.'; }
 
   // ---- article HTML: rebuild from allow-list ----
@@ -154,9 +154,11 @@ APP_JS = r"""
       var text = q.value.trim();
       if (!text) return;
       clear(out); out.appendChild(h('p', { 'class': 'muted', text: '답변을 생성하는 중...' }));
-      api('POST', '/api/query', { json: { question: text } }).then(function (r) {
+      api('POST', '/api/query', { json: { question: text, history: state.history } }).then(function (r) {
         clear(out);
         if (!r.ok) { out.appendChild(h('p', { 'class': 'error', text: errText(r.data) })); return; }
+        state.history = state.history.concat([{ q: text.slice(0, 1000), a: String(r.data.answer || '').slice(0, 2000) }]).slice(-3);
+        q.value = '';
         out.appendChild(h('div', { 'class': 'answer', text: r.data.answer }));
         var cites = h('div', { 'class': 'cites' });
         var anyDisputed = false;
@@ -170,7 +172,9 @@ APP_JS = r"""
         out.appendChild(feedbackBar((r.data.citations || []).map(function (c) { return c.path; })));
       });
     }
-    return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), askNote, out);
+    var fresh = h('button', { text: '새 대화', title: '이전 질문·답변을 잊고 처음부터 질문합니다',
+      on: { click: function () { state.history = []; q.value = ''; clear(out); } } });
+    return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), fresh, askNote, out);
   }
 
   var articleBox = h('section', { id: 'article' });
@@ -247,7 +251,7 @@ APP_JS = r"""
     root.appendChild(h('header', {}, h('strong', { text: personal ? '개인 위키' : '사내 위키' }),
       h('span', {}, statusLine, personal ? null : state.me.name + ' (' + state.me.department + ')',
         personal ? null : h('button', { text: '로그아웃', on: { click: function () {
-          api('POST', '/logout').then(function () { state.me = null; state.csrf = null; render(); }); } } }))));
+          api('POST', '/logout').then(function () { state.me = null; state.csrf = null; state.history = []; render(); }); } } }))));
     var views = { ask: askView, doc: docView, memo: captureView, up: uploadView, set: settingsView };
     var tabs = [['ask', '질문'], ['doc', '문서'], ['memo', '메모'], ['up', '업로드']];
     if (personal) tabs.push(['set', '설정']);

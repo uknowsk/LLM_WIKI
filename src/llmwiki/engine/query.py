@@ -75,11 +75,16 @@ class QueryService:
         an audit entry for `user` first; it is an evaluation/internal hook."""
         return self._retrieval.rank(user.spaces, question, params or self.params or RetrievalParams(), self.embedder)
 
-    def query(self, user: User, question: str, k: int = 5, params: RetrievalParams | None = None) -> QueryResult:
+    def query(self, user: User, question: str, k: int = 5, params: RetrievalParams | None = None,
+              history: list[tuple[str, str]] | None = None) -> QueryResult:
+        """`history`: earlier (question, answer) turns, oldest first. They only help resolve what the question refers
+        to (the last earlier question is added to the search text; all turns go into the prompt as NOT evidence).
+        The ACL filter still runs before any ranking, so history cannot widen what the user may read."""
         p = params or self.params or RetrievalParams(top_k=k)  # explicit params win over the legacy `k`
+        search_text = f"{history[-1][0]} {question}" if history else question
         # filter first: unreadable text never enters ranking, statistics or the prompt
         docs: dict[str, str] = {}
-        for h in self.retrieve(user, question, p):
+        for h in self.retrieve(user, search_text, p):
             f = self.settings.wiki_dir / h.path  # only the top-k files are read, lazily
             if f.is_file():
                 docs[h.path] = read_text(f)
@@ -89,6 +94,11 @@ class QueryService:
         cap = p.max_context_chars or None
         budget = context_char_budget()
         kw = {} if p.temperature is None else {"temperature": p.temperature}  # custom clients may lack the kwarg
+        system, earlier = SYSTEM, ""
+        if history:
+            system = SYSTEM + " Earlier turns are not evidence: use them only to understand what the question refers to."
+            earlier = ("PREVIOUS QUESTIONS AND ANSWERS (not evidence):\n"
+                       + "\n".join(f"Q: {q}\nA: {a}" for q, a in history) + "\n\n")
         retried = False
         while True:
             hits, context, truncated = pack_context(docs, budget, cap)
@@ -96,7 +106,7 @@ class QueryService:
             self.audit.record(user, "query_intent", question,
                               f"context: {', '.join(hits)} (hits={len(docs)} included={len(hits)} truncated={truncated})")
             try:
-                answer = self.llm.complete(SYSTEM, f"CONTEXT:\n{context}\n\nQUESTION: {question}", **kw).strip()
+                answer = self.llm.complete(system, f"CONTEXT:\n{context}\n\n{earlier}QUESTION: {question}", **kw).strip()
                 break
             except ContextExceeded as e:
                 if not retried:
