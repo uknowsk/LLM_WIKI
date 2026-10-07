@@ -13,6 +13,14 @@ str`
 .claude/skills/ruflo/
 eval/results/*.sqlite
 .env.personal
+# second brain: personal content stays local, only the templates are tracked
+10_raw_data/*
+!10_raw_data/_templates/
+20_ai_wiki/*
+!20_ai_wiki/_templates/
+30_outputs/*
+!30_outputs/_templates/
+.obsidian/
 .env.*
 !config/env.example
 !config/env.personal.example
