@@ -10,9 +10,12 @@
 
 ## (a) 완료된 것 / 검증된 것
 
-작성자 PC(Windows 11, Python 3.14.6)에서 마지막으로 실행한 결과: `pytest -q` **875 passed, 2 skipped**
+작성자 PC(Windows 11, Python 3.14.6)에서 마지막으로 실행한 결과: `pytest -q` **944 passed, 2 skipped**
 (skip 은 waitress 가 설치되지 않아 건너뛴 실서버 테스트 등). 이후 추가된 기능: 공용 폴더 수집(b-9), 개인 모드(`docs/PERSONAL-MODE.md`),
-웹 질의가 튜닝 기본값(top_k 8)을 쓰도록 수정 + `WIKI_TOP_K`/`WIKI_MAX_CONTEXT_CHARS` 환경변수. 이 수치는 "작성자 PC 의 마지막 실행 기준"이며 사내에서 재실행해 확인해야 한다.
+웹 질의가 튜닝 기본값(top_k 8)을 쓰도록 수정 + `WIKI_TOP_K`/`WIKI_MAX_CONTEXT_CHARS` 환경변수.
+**세컨드 브레인 보완(2026-10-07~08, 전부 자동 테스트 + 일부 브라우저 확인, 실제 Gauss/LM Studio 모델로는 미검증)**: 빠른 메모(`POST /api/capture`, '메모' 탭),
+이미지 수집(png/jpg, OCR 필요), 답변의 충돌 표시(⚠, `## Disputed`), 답변 피드백(👍/👎, 감사 로그만), 후속 질문(`history`, 증거 아님), '새 소식'(`GET /api/recent`),
+관리자 CLI `python -m llmwiki.lint_admin disputed|feedback|gaps|stats`. 결정 근거는 DEV-GUIDE D23~D29. 아직 없는 것: `Outdated` 자동 표시, 메일/메신저 자동 수집(사내 자격증명 필요), HWP. 이 수치는 "작성자 PC 의 마지막 실행 기준"이며 사내에서 재실행해 확인해야 한다.
 
 | 영역 | 상태 | 비고 |
 |---|---|---|
