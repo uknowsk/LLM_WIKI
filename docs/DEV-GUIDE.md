@@ -28,7 +28,7 @@
 
 ### 데이터 흐름
 ```
-inbox/<space>/파일 (또는 POST /api/upload)
+inbox/<space>/파일 (또는 POST /api/upload, 텍스트 메모는 POST /api/capture)
   -> pipeline.watch/queue (직렬 컴파일 락)
   -> process_file: 파서(확장자별) -> [PII 마스킹] -> save_raw  => raw/<space>/YYYY-MM-DD-slug.md (불변, 덮어쓰기 금지)
   -> Store.add_raw (raw_files)  -> Compiler.compile: triage(LLM) -> wiki/<topic>/<article>.md 작성/병합
@@ -149,5 +149,7 @@ space 는 `/` 로 계층이고 각 세그먼트는 `[a-z0-9][a-z0-9-]{0,62}`; `_
 | D20 | 단계 사이에 사용자 의견을 묻지 않고 계속 진행. 단, 강제 푸시 / 사용자 파일 삭제 / 푸시는 먼저 확인 | 이관 브리핑의 작업 방식 지시 |
 | D21 | 검색 파라미터는 사내 코퍼스로 재검증, 생성 파라미터는 Gauss 로 반드시 재튜닝. heldout 으로 튜닝 금지, 누수 0 | 집의 합성 코퍼스는 편향(ONSITE c, f-3) |
 | D22 | (이유 미기록) 세션 유휴 30분 / 절대 8시간, 업로드 50MiB, 사용자별 분당 120 요청 | 기본값. AD 그룹 변경은 재로그인으로 전파 |
+| D23 | 빠른 메모 `POST /api/capture`: 서버는 출처 URL 을 가져오지 않고 텍스트로만 기록. 공간은 사용자 본인의 space 만, 파일명은 정제된 제목+날짜+중복 시 번호, 업로드의 `_publish` 재사용, 감사 기록에는 크기만 | 서버측 URL 접속은 SSRF/외부 접속 금지 원칙 위반. 업로드와 같은 신뢰 규칙. `web/capture.py`, `tests/test_web_capture.py` |
+| D24 | `web/api.py query_service()` 가 `RetrievalParams.from_env()` 를 항상 전달 (`WIKI_TOP_K`, `WIKI_MAX_CONTEXT_CHARS`) | 이전에는 `params` 없이 호출되어 튜닝 기본값(top_k 8) 대신 옛 k=5 가 쓰였음 |
 
 새 결정은 같은 형식으로 여기에 추가한다(결정, 이유, 영향 파일).

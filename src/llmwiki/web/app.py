@@ -19,6 +19,7 @@ from . import api, ui
 from .http import HttpError, Request, Response, error_response, json_response
 from .limits import AuditGuard, RateLimiter
 from .sessions import SessionAuth, SessionGrant, build_cookie, read_cookie, safe_eq
+from .capture import handle_capture
 from .upload import handle_upload
 from .webconfig import WebConfig, is_dev_env, load_web_config
 
@@ -80,7 +81,8 @@ class WikiApp:
         for method, path, handler, auth in (
             ("GET", "/healthz", api.healthz, False), ("GET", "/api/me", api.me, True),
             ("POST", "/api/query", api.query, True), ("GET", "/api/article", api.article, True),
-            ("POST", "/api/upload", handle_upload, True), ("GET", "/api/audit", api.audit_entries, True),
+            ("POST", "/api/upload", handle_upload, True), ("POST", "/api/capture", handle_capture, True),
+            ("GET", "/api/audit", api.audit_entries, True),
             ("GET", "/api/login-info", self._login_info, False), ("POST", "/login", self._login, False),
             ("POST", "/logout", self._logout, True),
             ("GET", "/", ui.page, False), ("GET", "/static/app.js", ui.script, False),

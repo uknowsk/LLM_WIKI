@@ -45,7 +45,8 @@ APP_JS = r"""
   var ERR = { unauthorized: '로그인이 필요합니다.', invalid_credentials: '로그인에 실패했습니다.', forbidden: '권한이 없습니다.',
     not_found: '문서를 찾을 수 없습니다.', csrf: '요청이 거부되었습니다. 새로고침 후 다시 시도하세요.', too_large: '파일이 너무 큽니다.',
     bad_extension: '허용되지 않는 파일 형식입니다 (.eml .md .txt .docx .xlsx .pdf).', bad_filename: '파일 이름이 올바르지 않습니다.',
-    llm_unavailable: '답변 서버에 연결할 수 없습니다.', llm_busy: '문서 처리 중이라 답변이 지연됩니다. 잠시 후 다시 시도하세요.', bad_content: '파일 내용이 형식과 일치하지 않습니다.' };
+    llm_unavailable: '답변 서버에 연결할 수 없습니다.', llm_busy: '문서 처리 중이라 답변이 지연됩니다. 잠시 후 다시 시도하세요.', bad_content: '파일 내용이 형식과 일치하지 않습니다.',
+    bad_url: 'URL 은 http 또는 https 주소 한 줄이어야 합니다.', empty_text: '메모 내용을 입력하세요.', bad_space: '공간이 올바르지 않습니다.' };
   function errText(d) { return (d && ERR[d.error]) || '오류가 발생했습니다.'; }
 
   // ---- article HTML: rebuild from allow-list ----
@@ -195,6 +196,27 @@ APP_JS = r"""
       h('button', { 'class': 'primary', text: '업로드', on: { click: send } }), msg);
   }
 
+  function captureView() {
+    var sel = h('select', {});
+    state.me.spaces.forEach(function (s) { sel.appendChild(h('option', { value: s, text: s })); });
+    var single = state.me.spaces.length === 1;
+    var title = h('input', { type: 'text', maxlength: '60', placeholder: '제목 (비워 두면 첫 줄)' });
+    var url = h('input', { type: 'text', maxlength: '2000', placeholder: '출처 URL (선택, 가져오지 않고 기록만 합니다)' });
+    var text = h('textarea', { rows: '10', placeholder: '메모하거나 웹페이지에서 복사한 내용을 붙여 넣으세요.' });
+    var msg = h('p', {});
+    function send() {
+      if (!sel.value || !text.value.trim()) { msg.className = 'error'; msg.textContent = '공간과 내용을 입력하세요.'; return; }
+      msg.className = 'muted'; msg.textContent = '저장 중...';
+      api('POST', '/api/capture', { json: { space: sel.value, title: title.value, url: url.value, text: text.value } }).then(function (r) {
+        msg.className = r.ok ? 'ok' : 'error';
+        msg.textContent = r.ok ? '저장했습니다: ' + r.data.name + ' (곧 위키에 반영됩니다)' : errText(r.data);
+        if (r.ok) { title.value = ''; url.value = ''; text.value = ''; }
+      });
+    }
+    return h('section', {}, h('h2', { text: '빠른 메모' }), single ? null : h('label', { text: '공간' }), single ? null : sel,
+      title, url, text, h('button', { 'class': 'primary', text: '저장', on: { click: send } }), msg);
+  }
+
   function render() {
     clear(root);
     if (!state.me) { root.appendChild(state.wasPersonal ? expiredView() : loginView()); return; }
@@ -206,8 +228,8 @@ APP_JS = r"""
       h('span', {}, statusLine, personal ? null : state.me.name + ' (' + state.me.department + ')',
         personal ? null : h('button', { text: '로그아웃', on: { click: function () {
           api('POST', '/logout').then(function () { state.me = null; state.csrf = null; render(); }); } } }))));
-    var views = { ask: askView, doc: docView, up: uploadView, set: settingsView };
-    var tabs = [['ask', '질문'], ['doc', '문서'], ['up', '업로드']];
+    var views = { ask: askView, doc: docView, memo: captureView, up: uploadView, set: settingsView };
+    var tabs = [['ask', '질문'], ['doc', '문서'], ['memo', '메모'], ['up', '업로드']];
     if (personal) tabs.push(['set', '설정']);
     var nav = h('nav', {});
     tabs.forEach(function (t) {

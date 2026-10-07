@@ -65,6 +65,19 @@ def test_browser_upload_goes_through_the_same_path_and_needs_no_space_choice(tmp
     assert len(articles(p)) == 1
 
 
+def test_quick_memo_becomes_an_article_and_is_not_open_to_other_spaces(tmp_path):
+    p = make_personal(tmp_path)
+    c = p.client()
+    c.enter()
+    r = c.post("/api/capture", {"space": "personal", "title": "서버 증설", "url": "https://example.com/x", "text": DOC})
+    assert r.status == 201
+    assert c.post("/api/capture", {"space": "dept-a", "text": "x"}).status == 403
+    p.settle()
+    [path] = articles(p)
+    assert p.rt.wsgi.app.store.article_spaces(path) == frozenset({"personal"})
+    assert p.rt.worker.status()["failed"] == 0
+
+
 def test_question_answered_with_citation_from_own_documents(tmp_path):
     p = make_personal(tmp_path)
     p.drop("회의.md", DOC)
