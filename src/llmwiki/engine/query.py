@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..acl import can_read
 from ..audit import AuditLog
@@ -11,6 +11,7 @@ from ..config import Settings
 from . import article as art
 from .fsutil import read_text
 from .embed import Embedder
+from .lint import is_disputed
 from .llm import ContextExceeded, LLMClient
 from .params import RetrievalParams, RetrievedHit, context_char_budget
 from .retrieval import Retrieval
@@ -58,6 +59,7 @@ class AccessDenied(Exception):
 class QueryResult:
     answer: str
     citations: list[str]  # wiki-relative article paths, all readable by the asking user
+    disputed: list[str] = field(default_factory=list)  # the cited paths whose article has a Disputed section
 
 
 class QueryService:
@@ -123,7 +125,8 @@ class QueryService:
         else:
             cited, detail = hits, "cited: " + ", ".join(hits)
         self.audit.record(user, "query", question, detail)
-        return QueryResult(answer, cited)
+        # computed only from articles this user was already allowed to read (docs), so it adds no exposure
+        return QueryResult(answer, cited, [p for p in cited if is_disputed(docs[p])])
 
     def read_article(self, user: User, path: str) -> str:
         """Server-side re-check for citation clicks. Same error for denied and missing."""

@@ -151,5 +151,6 @@ space 는 `/` 로 계층이고 각 세그먼트는 `[a-z0-9][a-z0-9-]{0,62}`; `_
 | D22 | (이유 미기록) 세션 유휴 30분 / 절대 8시간, 업로드 50MiB, 사용자별 분당 120 요청 | 기본값. AD 그룹 변경은 재로그인으로 전파 |
 | D23 | 빠른 메모 `POST /api/capture`: 서버는 출처 URL 을 가져오지 않고 텍스트로만 기록. 공간은 사용자 본인의 space 만, 파일명은 정제된 제목+날짜+중복 시 번호, 업로드의 `_publish` 재사용, 감사 기록에는 크기만 | 서버측 URL 접속은 SSRF/외부 접속 금지 원칙 위반. 업로드와 같은 신뢰 규칙. `web/capture.py`, `tests/test_web_capture.py` |
 | D24 | `web/api.py query_service()` 가 `RetrievalParams.from_env()` 를 항상 전달 (`WIKI_TOP_K`, `WIKI_MAX_CONTEXT_CHARS`) | 이전에는 `params` 없이 호출되어 튜닝 기본값(top_k 8) 대신 옛 k=5 가 쓰였음 |
+| D25 | 충돌 표시: 컴파일러가 붙이는 `## Disputed` 절을 `engine/lint.is_disputed` 로 감지, `QueryResult.disputed`(이미 ACL 통과해 읽은 문서에서만 계산)와 `/api/query` 인용의 `disputed` 플래그, UI ⚠. 충돌 문서 목록은 관리자 CLI `python -m llmwiki.lint_admin disputed`(공간 필터 없음, 웹에서 접근 불가) | 사용자가 상충 내용을 모른 채 한쪽 답을 믿는 것을 막음. 새 노출 경로 없음. `engine/lint.py`, `engine/query.py`, `web/api.py`, `lint_admin.py`, `tests/test_web_disputed.py`. 한계: `Outdated`(대체됨) 표시는 아직 자동화하지 않음 |
 
 새 결정은 같은 형식으로 여기에 추가한다(결정, 이유, 영향 파일).

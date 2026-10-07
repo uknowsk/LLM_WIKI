@@ -51,7 +51,7 @@ def query(app, req: Request, session):
             raise HttpError(503, "llm_busy") from None
         log.error("llm unavailable")
         raise HttpError(502, "llm_unavailable") from None
-    cites = [{"path": p, "title": app.store.article_title(p) or p} for p in res.citations]
+    cites = [{"path": p, "title": app.store.article_title(p) or p, "disputed": p in res.disputed} for p in res.citations]
     return json_response(200, {"answer": res.answer, "citations": cites})
 
 

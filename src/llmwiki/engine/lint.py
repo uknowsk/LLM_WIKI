@@ -106,6 +106,26 @@ def lint_article(settings: Settings, store: Store, path: str) -> list[Suspect]:
     return suspects
 
 
+_DISPUTED = re.compile(r"(?m)^## Disputed[ \t]*$")  # the heading the compiler appends when sources conflict
+
+
+def is_disputed(text: str) -> bool:
+    return _DISPUTED.search(text) is not None
+
+
+def lint_disputed(settings: Settings, store: Store) -> list[str]:
+    """Paths of every article that carries a Disputed section (for admins to resolve). No ACL filter: this is an
+    internal report and must never be exposed to end users."""
+    out = []
+    for p in sorted(store.article_paths()):
+        try:
+            if is_disputed(read_text(settings.wiki_dir / p)):
+                out.append(p)
+        except OSError:
+            continue
+    return out
+
+
 def lint_grounding(settings: Settings, store: Store) -> list[Suspect]:
     out: list[Suspect] = []
     for p in store.article_paths():

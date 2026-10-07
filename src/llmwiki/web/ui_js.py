@@ -144,10 +144,14 @@ APP_JS = r"""
         if (!r.ok) { out.appendChild(h('p', { 'class': 'error', text: errText(r.data) })); return; }
         out.appendChild(h('div', { 'class': 'answer', text: r.data.answer }));
         var cites = h('div', { 'class': 'cites' });
+        var anyDisputed = false;
         (r.data.citations || []).forEach(function (c, i) {
-          cites.appendChild(h('button', { text: '[' + (i + 1) + '] ' + c.title, on: { click: function () { openArticle(c.path); } } }));
+          if (c.disputed) anyDisputed = true;
+          cites.appendChild(h('button', { text: (c.disputed ? '⚠ ' : '') + '[' + (i + 1) + '] ' + c.title,
+            title: c.disputed ? '출처끼리 상충하는 내용이 있는 문서입니다' : '', on: { click: function () { openArticle(c.path); } } }));
         });
         out.appendChild(cites);
+        if (anyDisputed) out.appendChild(h('p', { 'class': 'muted', text: '⚠ 표시된 문서는 출처끼리 내용이 다릅니다. 문서의 상충(Disputed) 절을 확인하세요.' }));
       });
     }
     return h('section', {}, h('h2', { text: '질문' }), q, h('button', { 'class': 'primary', text: '질문하기', on: { click: ask } }), askNote, out);
