@@ -17,7 +17,12 @@ from pathlib import Path
 
 from ..ingest.limits import max_input_bytes
 from ..pipeline import inbox
-from ..pipeline.run import SUPPORTED
+from ..ingest.image import IMAGE_EXTS
+from ..pipeline.run import SUPPORTED as _ALL_SUPPORTED
+
+# Watch folders hold the user's whole document tree (photos, screenshots...): copying every picture would OCR them all.
+# Images are accepted only when dropped into the inbox or uploaded on purpose.
+SUPPORTED = tuple(e for e in _ALL_SUPPORTED if e not in IMAGE_EXTS)
 
 STAGE_NAME = "watch"
 UNSTAGEABLE = "skipped_unstageable"  # sha256 column marker: cannot be staged; retried only when size/mtime change
