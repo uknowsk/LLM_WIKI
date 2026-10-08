@@ -51,7 +51,9 @@ def main(argv: list[str] | None = None) -> int:
             results = queue.drain(process)
             final = {str(r.path): r.status for r in results}  # last attempt wins
             failed = [p for p, s in final.items() if s == "failed"]
-            print(f"scan={counts} processed={len(final)} failed={len(failed)}")
+            print(f"scan={counts} deferred={watcher.deferred} processed={len(final)} failed={len(failed)}")
+            if watcher.deferred:
+                print(f"{watcher.deferred} file(s) were left in the inbox because the queue is full; run again to process them")
             return 1 if failed else 0
         watcher.run_forever(process, args.interval)
     except KeyboardInterrupt:

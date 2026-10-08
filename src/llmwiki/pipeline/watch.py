@@ -26,12 +26,34 @@ def locked_max_scans(environ=None) -> int:
         return 60
 
 
+def _positive_env(name: str, default: int, environ=None) -> int:
+    try:
+        v = int((environ if environ is not None else os.environ).get(name, ""))
+        return v if v > 0 else default
+    except ValueError:
+        return default
+
+
+def max_pending_jobs(environ=None) -> int:
+    """WIKI_MAX_PENDING_JOBS: queue length at which new files are left in the inbox for a later scan. Default 500."""
+    return _positive_env("WIKI_MAX_PENDING_JOBS", 500, environ)
+
+
+def batch_jobs(environ=None) -> int:
+    """WIKI_BATCH_JOBS: jobs run per loop iteration before the inbox is rescanned (fairness between spaces). Default 10."""
+    return _positive_env("WIKI_BATCH_JOBS", 10, environ)
+
+
 class Watcher:
     def __init__(self, settings: Settings, queue: JobQueue, audit: AuditLog, min_age: float = 0.0,
-                 aliases: AliasMap | None = None, locked_max: int | None = None):
+                 aliases: AliasMap | None = None, locked_max: int | None = None, max_pending: int | None = None,
+                 batch: int | None = None):
         self.settings, self.queue, self.audit, self.min_age = settings, queue, audit, min_age
         self.aliases = aliases
         self.locked_max = locked_max if locked_max else locked_max_scans()
+        self.max_pending = max_pending if max_pending else max_pending_jobs()
+        self.batch = batch if batch else batch_jobs()
+        self.deferred = 0  # files left in the inbox by the last scan because the queue was full
         self._locks: dict[str, tuple[tuple[int, int], int]] = {}  # path -> (signature, consecutive locked scans)
         self._sigs: dict[str, tuple[int, int]] = {}  # (size, mtime_ns) seen on the previous scan
         self._seen: dict[str, tuple[int, int]] = {}
@@ -96,13 +118,20 @@ class Watcher:
         counts = {"queued": 0, "rejected": 0, "waiting": 0}
         now = time.time()
         self._seen = {}
+        self.deferred = 0
+        pending = self.queue.pending_count()
         for item in inbox.scan(self.settings, self.aliases):
             if item.space is None:
                 counts["rejected"] += self._reject(item)
             elif not self._ready(item, now):
                 counts["waiting"] += 1
+            elif pending >= self.max_pending:
+                self.deferred += 1  # queue is full: the file stays untouched in the inbox until there is room
             elif self.queue.enqueue(item.path, item.space):
                 counts["queued"] += 1
+                pending += 1
+        if self.deferred:
+            log.warning("job queue full (%d pending): %d file(s) left in the inbox for a later scan", pending, self.deferred)
         self._sigs = self._seen
         return counts
 
@@ -114,7 +143,7 @@ class Watcher:
         while not should_stop():
             try:
                 self.scan_once()
-                self.queue.run_pending(process)
+                self.queue.run_pending(process, max_jobs=self.batch)  # small batches, then rescan: spaces get fair turns
                 fails = 0
             except Exception as exc:  # noqa: BLE001  one bad input must never kill the service loop
                 fails += 1

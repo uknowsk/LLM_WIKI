@@ -36,6 +36,20 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
+def round_robin(rows: list[tuple]) -> list[tuple]:
+    """Interleave (path, space, ...) rows by space: one job per space in turn, each space's own order unchanged.
+    A department that drops a thousand files then no longer makes every other department wait behind them."""
+    by_space: dict[str, list[tuple]] = {}
+    for r in rows:
+        by_space.setdefault(r[1], []).append(r)
+    out: list[tuple] = []
+    queues = list(by_space.values())
+    while queues:
+        out += [q.pop(0) for q in queues]
+        queues = [q for q in queues if q]
+    return out
+
+
 class JobQueue:
     def __init__(self, settings: Settings, max_attempts: int = MAX_ATTEMPTS):
         self.settings, self.max_attempts = settings, max_attempts
@@ -90,6 +104,12 @@ class JobQueue:
             self._db.execute("DELETE FROM pipeline_jobs WHERE status = 'new'")
             self._db.commit()
 
+    def pending_count(self) -> int:
+        """Jobs that still have to run (new, or failed with attempts left)."""
+        with self._lock:
+            return self._db.execute("SELECT COUNT(*) FROM pipeline_jobs WHERE status='new' OR (status='failed' AND attempts < ?)",
+                                    (self.max_attempts,)).fetchone()[0]
+
     def jobs(self, status: str | None = None) -> list[dict]:
         with self._lock:
             return self._jobs(status)
@@ -111,7 +131,8 @@ class JobQueue:
             self._db.commit()
 
     def run_pending(self, process: Callable[[Path, str], ProcessResult], max_jobs: int | None = None) -> list[ProcessResult]:
-        """Run each runnable job once, one at a time. Failed jobs are retried on the next call (attempt cap)."""
+        """Run each runnable job once, one at a time, spaces taking turns. At most `max_jobs` per call when given (the
+        service loop uses a small batch and rescans in between). Failed jobs are retried on the next call (attempt cap)."""
         results: list[ProcessResult] = []
         with COMPILE_LOCK:
             with self._lock:
@@ -120,7 +141,7 @@ class JobQueue:
                     "WHERE status='new' OR (status='failed' AND attempts < ?) ORDER BY id",
                     (self.max_attempts,),
                 ).fetchall()
-            for key, space, attempts in rows[:max_jobs]:
+            for key, space, attempts in round_robin(rows)[:max_jobs]:
                 path = Path(key)
                 if not path.exists():
                     self._finish(key, "failed", self.max_attempts, "file vanished before processing")
