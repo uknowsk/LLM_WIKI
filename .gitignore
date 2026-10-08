@@ -15,6 +15,9 @@ eval/results/*.sqlite
 .env.personal
 # real brain profiles (internal host names, key file paths): keep local; only config/brains.example.json is tracked
 config/brains.json
+# safety net: key files belong outside the repo, but if one is ever placed here it must never be committed
+.wiki-secrets/
+*.key
 # second brain: personal content stays local, only the templates are tracked
 10_raw_data/*
 !10_raw_data/_templates/

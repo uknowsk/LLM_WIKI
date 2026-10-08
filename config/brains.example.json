@@ -1,5 +1,5 @@
 {
-  "_comment": "Brain profiles. Copy to config/brains.json and edit. Select with WIKI_BRAIN=<name>|auto and WIKI_BRAIN_DATA=public|personal|company|private (default company). 'data' = the data classes this brain may receive: company = company documents, personal = your own notes, private = notes marked private (diary...), public = public material. A brain not listed for a class is NEVER used for it, not even as a fallback. 'cost': lower is tried first in auto mode (0 = free/local). Keys: only files (api_key_file), relative paths are relative to this file. Each brain sees ONLY its own settings (nothing is inherited). Check with: python -m llmwiki.brains list",
+  "_comment": "Brain profiles. Copy to config/brains.json and edit. Select with WIKI_BRAIN=<name>|auto and WIKI_BRAIN_DATA=public|personal|company|private (default company). 'data' = the data classes this brain may receive: company = company documents, personal = your own notes, private = notes marked private (diary...), public = public material. A brain not listed for a class is NEVER used for it, not even as a fallback. 'cost': lower is tried first in auto mode (0 = free/local). Keys: only files (api_key_file; a key value written in this JSON is rejected). Put the key file OUTSIDE this repo folder (e.g. under your user profile, readable only by you); a relative path would be relative to this file. Each brain sees ONLY its own settings (nothing is inherited). Check with: python -m llmwiki.brains list",
   "default": "auto",
   "brains": {
     "local": {
@@ -16,7 +16,7 @@
       "cost": 0.5,
       "data": ["public", "personal"],
       "allowed_hosts": ["generativelanguage.googleapis.com"],
-      "api_key_file": "../.wiki-secrets/gemini.key",
+      "api_key_file": "C:\\Users\\<사용자>\\.wiki-secrets\\gemini.key",
       "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_TIMEOUT": "120"}
     },
     "gauss": {
@@ -25,7 +25,7 @@
       "cost": 1,
       "data": ["public", "personal", "company"],
       "allowed_hosts": ["gauss.corp.example"],
-      "api_key_file": "../.wiki-secrets/gauss.key",
+      "api_key_file": "C:\\Users\\<사용자>\\.wiki-secrets\\gauss.key",
       "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_STREAM": "1", "WIKI_LLM_TIMEOUT": "300", "WIKI_LLM_MAX_TOKENS": "4096"}
     },
     "claude": {
@@ -34,7 +34,7 @@
       "cost": 2,
       "data": ["public", "personal"],
       "allowed_hosts": ["api.anthropic.com"],
-      "api_key_file": "../.wiki-secrets/claude.key"
+      "api_key_file": "C:\\Users\\<사용자>\\.wiki-secrets\\claude.key"
     }
   }
 }
