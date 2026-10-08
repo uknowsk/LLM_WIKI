@@ -1,0 +1,9 @@
+# ripgrep (Claude Code's Grep/Glob tools) skips everything in .gitignore. The second-brain folders are gitignored on
+# purpose (personal content must not be committed), but they must stay searchable, otherwise searches wrongly find nothing.
+# .ignore has a higher priority than .gitignore, so these lines make the three folders visible to search only.
+!10_raw_data/
+!10_raw_data/**
+!20_ai_wiki/
+!20_ai_wiki/**
+!30_outputs/
+!30_outputs/**
