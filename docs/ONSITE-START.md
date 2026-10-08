@@ -1,4 +1,4 @@
-# 사내 시작 지침 (clone 직후 Claude Code 세션이 가장 먼저 읽는 문서)
+# 사내 시작 지침 (clone 직후 AI 에이전트(Claude Code, Gemini 등)가 가장 먼저 읽는 문서)
 
 이 저장소를 사내 PC 에 clone 해서 작업 폴더로 열었다면, **이 문서의 순서대로 진행**한다. 상세는 `docs/ONSITE-HANDOFF.md`(런북),
 `docs/DEV-GUIDE.md`(구조/규칙), `CLAUDE.md`(불변식). 홈 세션의 메모리는 없다. 저장소가 유일한 자료다.
@@ -41,6 +41,7 @@
 | 6 | 공용 폴더(SMB) 경로, 부서 목록과 폴더 이름(한글이면 별칭), 부서별 AD 그룹 | S7 |
 | 7 | 데이터 디렉터리(`WIKI_DATA_DIR`, 로컬 디스크), 서비스 계정, 로그/백업 위치 | S3, S8, S9 |
 | 8 | 처음 시험할 비식별 문서 2~3개(저장소 밖 경로) | S4 |
+| 9 | **Gemini**(사내에서 무료로 쓸 수 있다고 함): 접속 방식(공식 API 키 / 사내 게이트웨이 / 기타), OpenAI 호환 엔드포인트 제공 여부와 주소, 인증 방식, 사내 문서를 Gemini 로 보내도 되는 보안 등급·정책, 프록시 필요 여부, 호출 제한. 사내 문서를 보낼 수 없다면 Gemini 는 공개 자료·개인 노트에만 쓴다 | S4, 모델 선택 |
 
 ## 3. 단계별 진행 (순서대로)
 
@@ -64,6 +65,8 @@ think 오류/컨텍스트 초과/스트림 이상이면 ONSITE-HANDOFF (d) 표�
 **S9 백업/복구**: HANDOFF b-7. 백업 1회와 **복구 리허설**(미해본 항목).
 
 **S10 재튜닝**: HANDOFF (c). 실문서 QA 세트는 **사람이 라벨링**(저장소 밖). Gauss 호출 비용/제한을 확인한 뒤 진행. heldout 은 구성당 1회. leak != 0 이면 그 설정 폐기. 채택값은 `engine/params.py` 기본값 수정 대신 가능하면 `WIKI_TOP_K` 등 환경변수로(문서에 기록).
+
+**모델 선택(Gemini 포함)**: 위키 엔진이 쓰는 LLM 은 `WIKI_LLM_*` 환경변수로 고른다(Gauss, LM Studio, Gemini 의 OpenAI 호환 엔드포인트 등). 외부 호스트는 `WIKI_LLM_ALLOWED_HOSTS` 에 정확한 호스트 이름을 넣어야 통과하고, 프록시가 필요하면 `WIKI_LLM_PROXY` 를 명시한다(기본은 둘 다 금지). 키는 `*_FILE` 경로로만. 에이전트(지금 작업하는 AI) 가 Claude 가 아니어도 이 문서의 단계와 보안 규칙은 같고, 저장소 루트의 `GEMINI.md` 가 같은 지침 위치를 안내한다. 엔진 설정 예시는 `config/env.example` 과 `config/env.personal.example` 의 프로필 B 를 따른다.
 
 개인 모드(`python -m llmwiki.personal`, `docs/PERSONAL-MODE.md`)는 사용자 본인 PC 용이며 중앙 서비스와 별개다. 중앙 위키를 PC 로 동기화하는 기능은 보안팀 승인 전이라 **만들지 않는다.**
 
