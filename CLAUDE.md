@@ -61,7 +61,7 @@
 - **첨부 원본**(PDF·이미지 등)은 `10_raw_data/_files/` 에 두고 원본 노트에서 링크한다. 점검 도구의 해시 보호는 이 폴더의 모든 파일 형식에 적용된다.
 - **개인정보**: 고객 실명·연락처·주민번호 등은 원본 저장 전에 가명/마스킹한다(원본은 평문 파일이다).
 - **검색**: 이 폴더들은 `.gitignore` 대상이라 `Grep`/`Glob` 이 기본으로 건너뛴다. 루트 `.ignore` 가 세 폴더를 다시 보이게 한다. 검색 결과가 이상하게 비면 `.ignore` 를 먼저 확인한다.
-- **백업**: 이 폴더는 git 이력이 없다(개인 내용이라 커밋하지 않음). 디스크 장애나 실수로 지우면 복구할 수 없으므로 정기 백업이 필요하다.
+- **백업**: 이 폴더는 git 이력이 없다(개인 내용이라 커밋하지 않음). 대신 `python -m llmwiki.vault_backup backup` 이 세 폴더를 백업 폴더(기본 저장소 옆 `second-brain-backup`, 환경변수 `WIKI_VAULT_BACKUP_DIR`)에 zip 스냅샷으로 복사한다(내용이 같으면 건너뛰고, 기본 30개 보관, 쓰고 나서 검증). 복원은 `python -m llmwiki.vault_backup restore <zip> --into <빈 폴더>`(덮어쓰지 않음). 매일 21:00 에 백업 + `vault_lint` 를 실행하는 작업 스케줄러 작업 `LLMWiki-VaultMaintenance` 가 등록되어 있고 결과는 `<백업폴더>\last-maintenance.txt` 에 남는다(등록/제거: `scripts\install-vault-maintenance-task.ps1`, `-Uninstall`). 백업 폴더도 평문 개인 노트이므로 본인만 읽을 수 있게 둔다.
 
 **산출물**: 지시를 받으면 관련 위키 문서를 먼저 읽고, 완성한 최종 파일을 `30_outputs/YYYY-MM-DD_제목.md` 로 저장한다. 근거 위키 문서는 `based_on` 에 `[[링크]]` 로 남긴다.
 
