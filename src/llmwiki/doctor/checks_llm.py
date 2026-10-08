@@ -48,6 +48,11 @@ def _scrub(text: str, *keys) -> str:
 
 def build_llm(settings: Settings, environ: Mapping[str, str]):
     """(client | None, [Results]) - provider/config summary; never prints secrets."""
+    if (environ.get("WIKI_BRAIN") or "").strip():  # brain profiles replace the single WIKI_LLM_* client
+        return None, [warn("llm.brain", "WIKI_BRAIN 이 설정됨: 두뇌 프로필 라우터를 사용합니다",
+                           "단일 LLM 점검(주소/키/스트림)은 건너뜁니다. 프로필마다 격리된 설정을 씁니다.",
+                           "python -m llmwiki.brains list 로 프로필·허용 데이터 등급·키 파일을, "
+                           "python -m llmwiki.brains probe <이름> 으로 실제 연결을 확인하세요.")]
     try:
         name = provider_name(environ, "WIKI_LLM_PROVIDER")
         client = llm_from_env(settings, environ)

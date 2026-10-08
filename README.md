@@ -20,6 +20,14 @@ scripts\run-web.ps1 ; scripts\run-pipeline.ps1      # 웹 서버 / inbox 파이�
 ```
 운영 서비스 등록: `scripts\install-service-taskscheduler.ps1 -WhatIf` 부터. WSL/Docker 는 사용하지 않는다.
 
+## 두뇌(LLM) 선택과 자동 전환 (Claude / Gemini / Gauss / 로컬)
+
+위키 엔진이 호출하는 LLM 은 프로필로 고르거나 자동 전환시킬 수 있다. `config\brains.example.json` 을 `config\brains.json` 으로 복사해 채우고(키는 파일 경로만),
+`WIKI_BRAIN=auto`(비용이 낮은 순서로, 오류·한도 초과면 다음 두뇌로) 또는 `WIKI_BRAIN=gemini`(그 두뇌만) 로 실행한다.
+**데이터 등급 규칙**이 핵심이다: `WIKI_BRAIN_DATA=company|personal|private|public`(기본 company) 인 실행은 그 등급이 허용된 두뇌로만 가고, 허용되지 않은 두뇌(예: 사내 문서를 Gemini 로)는 폴백으로도 절대 쓰지 않는다.
+확인: `python -m llmwiki.brains list`(네트워크 없음) / `probe <이름>`(실제 호출 1회). 실제 Gemini·Claude·Gauss 호출은 이 PC에서 검증하지 못했다(요청 형태와 클라이언트 생성만 자동 테스트).
+작업하는 코딩 에이전트(Claude Code, Gemini CLI 등)는 별개다: 어느 도구를 실행하느냐로 정해지며, 저장소 지침은 `CLAUDE.md`/`GEMINI.md` 로 같다.
+
 ## 세컨드 브레인 (옵시디언 볼트: 이 폴더를 옵시디언에서 열기)
 
 Karpathy 의 LLM Wiki 방식: 사람이 원본을 넣고, AI 가 위키를 만들고 유지하고, 사람은 읽고 질문한다. 위의 사내 LLM Wiki(권한 관리되는 시스템)와는 별개의 **개인용** 지식 폴더다.

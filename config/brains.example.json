@@ -1,0 +1,40 @@
+{
+  "_comment": "Brain profiles. Copy to config/brains.json and edit. Select with WIKI_BRAIN=<name>|auto and WIKI_BRAIN_DATA=public|personal|company|private (default company). 'data' = the data classes this brain may receive: company = company documents, personal = your own notes, private = notes marked private (diary...), public = public material. A brain not listed for a class is NEVER used for it, not even as a fallback. 'cost': lower is tried first in auto mode (0 = free/local). Keys: only files (api_key_file), relative paths are relative to this file. Each brain sees ONLY its own settings (nothing is inherited). Check with: python -m llmwiki.brains list",
+  "default": "auto",
+  "brains": {
+    "local": {
+      "base_url": "http://127.0.0.1:1234/v1",
+      "model": "<model id loaded in LM Studio>",
+      "cost": 0,
+      "data": ["public", "personal", "company", "private"],
+      "env": {"WIKI_LLM_TIMEOUT": "300"}
+    },
+    "gemini": {
+      "_comment": "Google's OpenAI-compatible endpoint (UNVERIFIED here: check the address and model id in Google's docs). Sends text to Google: allow only what your policy allows. On-site company documents: ask security first (leave 'company' out until approved).",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "model": "<gemini model id>",
+      "cost": 0.5,
+      "data": ["public", "personal"],
+      "allowed_hosts": ["generativelanguage.googleapis.com"],
+      "api_key_file": "../.wiki-secrets/gemini.key",
+      "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_TIMEOUT": "120"}
+    },
+    "gauss": {
+      "base_url": "https://gauss.corp.example/v1",
+      "model": "<Gauss model id>",
+      "cost": 1,
+      "data": ["public", "personal", "company"],
+      "allowed_hosts": ["gauss.corp.example"],
+      "api_key_file": "../.wiki-secrets/gauss.key",
+      "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_STREAM": "1", "WIKI_LLM_TIMEOUT": "300", "WIKI_LLM_MAX_TOKENS": "4096"}
+    },
+    "claude": {
+      "custom_config": "llm-claude.example.json",
+      "model": "<claude model id>",
+      "cost": 2,
+      "data": ["public", "personal"],
+      "allowed_hosts": ["api.anthropic.com"],
+      "api_key_file": "../.wiki-secrets/claude.key"
+    }
+  }
+}

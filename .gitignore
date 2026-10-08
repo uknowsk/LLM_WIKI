@@ -13,6 +13,8 @@ str`
 .claude/skills/ruflo/
 eval/results/*.sqlite
 .env.personal
+# real brain profiles (internal host names, key file paths): keep local; only config/brains.example.json is tracked
+config/brains.json
 # second brain: personal content stays local, only the templates are tracked
 10_raw_data/*
 !10_raw_data/_templates/

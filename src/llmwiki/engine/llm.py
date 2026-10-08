@@ -232,6 +232,10 @@ class OpenAICompatClient:
 
     @classmethod
     def from_settings(cls, settings: Settings, **kw) -> "OpenAICompatClient":
+        if (os.environ.get("WIKI_BRAIN") or "").strip():  # brain profiles: choose/switch the LLM (see brains.py)
+            from ..brains import router_from_env
+
+            return router_from_env(settings)  # type: ignore[return-value]  (a BrainRouter has the same complete())
         # with WIKI_LLM_PROVIDER=custom, cls(...) returns the CustomChatClient (see __new__)
         return cls(settings.llm_base_url, settings.llm_model, **kw)
 
@@ -288,7 +292,13 @@ def _stream_error(err) -> LLMError:
 
 
 def llm_from_env(settings: Settings, environ=None, **kw):
-    """Factory: the chat client selected by WIKI_LLM_PROVIDER (openai | custom). See providers.py."""
+    """Factory: the chat client selected by WIKI_LLM_PROVIDER (openai | custom). See providers.py.
+    With WIKI_BRAIN set, a BrainRouter (profiles, data classes, automatic switching) is returned instead."""
+    env = os.environ if environ is None else environ
+    if (env.get("WIKI_BRAIN") or "").strip():
+        from ..brains import router_from_env
+
+        return router_from_env(settings, env)
     from .providers import llm_from_env as _f
 
     return _f(settings, environ, **kw)

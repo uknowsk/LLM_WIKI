@@ -1,0 +1,25 @@
+{
+  "_comment": "Claude (Anthropic Messages API) as a chat brain via WIKI_LLM_PROVIDER=custom. Used by a profile in config/brains.json ('custom_config'). The API key goes in the profile's api_key_file, never in this file. UNVERIFIED: written from the public API format, never called for real from this repo; check the endpoint, version header, model id and whether your model accepts 'temperature' in Anthropic's current documentation. Keys starting with _ are ignored.",
+  "url": "https://api.anthropic.com/v1/messages",
+  "method": "POST",
+  "headers": {
+    "x-api-key": "{api_key}",
+    "anthropic-version": "2023-06-01"
+  },
+  "body": {
+    "model": "{model}",
+    "max_tokens": "{max_tokens}",
+    "temperature": "{temperature}",
+    "system": "{system}",
+    "messages": [
+      {"role": "user", "content": "{prompt}"}
+    ]
+  },
+  "response_path": "content.0.text",
+  "error_path": "error.message",
+  "stream": false,
+  "context_exceeded_patterns": ["prompt is too long", "too many tokens"],
+  "supports_json_schema": false,
+  "timeout": 120,
+  "max_tokens": 4096
+}
