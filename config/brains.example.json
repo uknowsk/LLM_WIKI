@@ -19,6 +19,16 @@
       "api_key_file": "C:\\Users\\<사용자>\\.wiki-secrets\\gemini.key",
       "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_TIMEOUT": "120"}
     },
+    "gemini-corp": {
+      "_comment": "ON-SITE ONLY, and only after security approves sending company documents to Gemini: the COMPANY-issued Gemini access (its own address and its own key file, NOT your personal key). 'company' is listed here on purpose; the personal 'gemini' profile above never receives company documents. Use with WIKI_BRAIN=gemini-corp (or auto) and WIKI_BRAIN_DATA=company. Consider WIKI_PII_POLICY_FILE masking for the spaces you send (regex based, not complete).",
+      "base_url": "https://<company Gemini address>/v1beta/openai",
+      "model": "<model id>",
+      "cost": 0.4,
+      "data": ["public", "personal", "company"],
+      "allowed_hosts": ["<company Gemini host name>"],
+      "api_key_file": "C:\\Users\\<사용자>\\.wiki-secrets\\gemini-corp.key",
+      "env": {"WIKI_LLM_STRUCTURED": "off", "WIKI_LLM_TIMEOUT": "120", "WIKI_LLM_MAX_TOKENS": "4096"}
+    },
     "gauss": {
       "base_url": "https://gauss.corp.example/v1",
       "model": "<Gauss model id>",
